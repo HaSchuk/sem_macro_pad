@@ -9,21 +9,21 @@ app = {                       # REQUIRED dict, must be named 'app'
     'macros' : [              # List of button macros...
         # COLOR    LABEL    KEY SEQUENCE
         # 1st row ----------
-        (0xFF2000, 'A', [Keycode.A]),      # Chrome
-        (0xFF2000, 'Marker', [Keycode.M]),         # Jingle Palette
-        (0xFF2000, 'V', [Keycode.V]),     # Teradici
+        (0xFF2000, 'A', [Keycode.A]),     
+        (0xFF2000, 'Marker', [Keycode.M]),         
+        (0xFF2000, 'V', [Keycode.V]),     
         # 2nd row ----------
-        (0x00FFFF, 'In', [Keycode.I]),     # Fire Fox
-        (0x00FFFF, 'Mark', [Keycode.X]),       # GoXLR
-        (0x00FFFF, 'Out', [Keycode.O]),    # ScreenToGif
+        (0x00FFFF, 'In', [Keycode.I]),     
+        (0x00FFFF, 'Mark', [Keycode.X]),      
+        (0x00FFFF, 'Out', [Keycode.O]),    
         # 3rd row ----------
-        (0xFF2000, 'Trim L', [Keycode.Q]),      # total commander
-        (0xFF2000, 'Select', [Keycode.D]),      # Elgato Cam Hub
-        (0xFF2000, 'Trim R', [Keycode.W]),      # MPC-HC
+        (0xFF2000, 'Trim L', [Keycode.Q]),      
+        (0xFF2000, 'Select', [Keycode.D]),     
+        (0xFF2000, 'Trim R', [Keycode.W]),      
         # 4th row ----------
-        (0x00FFFF, '<-', [Keycode.J]),      # Adobe Bridge
-        (0x00FFFF, 'stop', [Keycode.K]),      # Internet Download Manager
-        (0x00FFFF, '->', [Keycode.L]),         # VLC
+        (0x00FFFF, '<-', [Keycode.J]),      
+        (0x00FFFF, 'stop', [Keycode.K]),      
+        (0x00FFFF, '->', [Keycode.L]),       
         # Upper Encoder ---
         (0x000000, '', [Keycode.EQUALS ]), # Save for web
         (0x000000, '', [Keycode.MINUS ]), # Save for web
