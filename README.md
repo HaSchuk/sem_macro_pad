@@ -1,5 +1,5 @@
 # sem_macro_pad
-This project is based on the Adafruid MarcroPad: https://learn.adafruit.com/adafruit-macropad-rp2040?gclid=CjwKCAjwr_CnBhA0EiwAci5sikVNz8DN5qJxpfzbvG5E12QpohhQ6L6yDS5HTK8BDrO_iZmVVZz1wBoCfqwQAvD_BwE and is a fork of https://github.com/pixelpushinfreak/key_tickler_macro_pad
+This project is based on the Adafruid MarcroPad: https://learn.adafruit.com/adafruit-macropad-rp2040 and is a fork of https://github.com/pixelpushinfreak/key_tickler_macro_pad
 
 It's a modification for SEM control by using key shortcuts for controlling the software.
 
