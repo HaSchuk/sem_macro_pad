@@ -12,63 +12,42 @@ set, press MACROPAD keys to send key sequences and other USB protocols.
 # pylint: disable=import-error, unused-import, too-few-public-methods
 
 import os
+# import sys
 import time
 import displayio
 import terminalio
 import board
+import math
+import sparkfun_qwiicjoystick
 from adafruit_display_shapes.rect import Rect
 from adafruit_display_text import label
 from adafruit_macropad import MacroPad
-from micropython import const
+# from micropython import const
 # from rainbowio import colorwheel
 from adafruit_neokey.neokey1x4 import NeoKey1x4
 from adafruit_seesaw import seesaw, rotaryio, digitalio, neopixel
-from adafruit_seesaw.seesaw import Seesaw
+# from adafruit_seesaw.seesaw import Seesaw
 from adafruit_hid.keycode import Keycode
-from adafruit_hid.mouse import Mouse
+# from adafruit_hid.mouse import Mouse
 
 # Initialisierung Macropad
 
 macropad = MacroPad()
 
-BUTTON_X = const(6)
-BUTTON_Y = const(2)
-BUTTON_A = const(5)
-BUTTON_B = const(1)
-BUTTON_SELECT = const(0)
-BUTTON_START = const(16)
-button_mask = const(
-    (1 << BUTTON_X)
-    | (1 << BUTTON_Y)
-    | (1 << BUTTON_A)
-    | (1 << BUTTON_B)
-    | (1 << BUTTON_SELECT)
-    | (1 << BUTTON_START)
-)
 # use default I2C bus
 i2c_bus = board.I2C()
 
 # Create a NeoKey object
 neokey = NeoKey1x4(i2c_bus, addr=0x30)
 
-
-# Create a Seesaw object (gamepad)
-gamepad = Seesaw(i2c_bus, addr=0x50)
-
-gamepad.pin_mode_bulk(button_mask, gamepad.INPUT_PULLUP)
+# Create a Joystick object
+gamepad = sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus)
 
 last_x = 0
 last_y = 0
 
-speed_H = "zero"
-speed_V = "zero"
-
-start_x = 1023 - gamepad.analog_read(14)
-start_y = 1023 - gamepad.analog_read(15)
-ma_joy_pos = [-600, -340, -170, -10, 10, 170, 340]
-ma_mo_move = [-100, -50, -10, 0, 10, 50, 100]
-ma_mo_xspeed = ['SL 3', 'SL 2', 'SL 1', 'SLR 0', 'SR 1', 'SR 2', 'SR 3']
-ma_mo_yspeed = ['SD 3', 'SD 2', 'SD 1', 'SDU 0', 'SU 1', 'SU 2', 'SU 3']
+start_x = 1023 - gamepad.horizontal
+start_y = 1023 - gamepad.vertical
 mo_xspeed = None
 mo_yspeed = None
 
@@ -87,129 +66,91 @@ pixel1.brightness = 0.2
 pixel1.fill(0xFF0000)
 
 while True:
-    # gamepad - stick auslesen
-    x = 1023 - gamepad.analog_read(14)
-    y = 1023 - gamepad.analog_read(15)
+    # Joystick auslesen
+    x = 1023 - gamepad.horizontal
+    y = 1023 - gamepad.vertical
     x_rel_pos = x - start_x
     y_rel_pos = y - start_y
+    y_rel_pos = -y_rel_pos
 
-    for i_dx in range(len(ma_joy_pos)):
+    if x_rel_pos > 0:
+        x_rel_pos_h = 1
+        mo_xspeed_h = math.ceil(((10 * math.log(x_rel_pos)) + (x_rel_pos / 10)))
+        mo_xspeed = mo_xspeed_h * x_rel_pos_h
 
-        if x_rel_pos >= ma_joy_pos[i_dx]:
-            i_x = i_dx
+    elif x_rel_pos < 0:
+        x_rel_pos_h = -1
+        x_rel_pos = abs(x_rel_pos)
+        mo_xspeed_h = math.ceil(((10 * math.log(x_rel_pos)) + (x_rel_pos / 10)))
+        mo_xspeed = mo_xspeed_h * x_rel_pos_h
 
-    for i_dy in range(len(ma_joy_pos)):
+    else:
+        mo_xspeed = 0
 
-        if y_rel_pos >= ma_joy_pos[i_dy]:
-            i_y = i_dy
+    if y_rel_pos > 0:
+        y_rel_pos_h = 1
+        mo_yspeed_h = math.ceil(((10 * math.log(y_rel_pos)) + (y_rel_pos / 10)))
+        mo_yspeed = mo_yspeed_h * y_rel_pos_h
 
-    mo_xspeed = ma_mo_move[i_x]  # ma_mo_xspeed[i_x]
-    mo_yspeed = ma_mo_move[i_y]  # ma_mo_yspeed[i_y]
+    elif y_rel_pos < 0:
+        y_rel_pos_h = -1
+        y_rel_pos = abs(y_rel_pos)
+        mo_yspeed_h = math.ceil(((10 * math.log(y_rel_pos)) + (y_rel_pos / 10)))
+        mo_yspeed = mo_yspeed_h * y_rel_pos_h
 
-    if x_rel_pos == 0:
-        speed_H = "zero"
-
-    elif x_rel_pos < 170 and x_rel_pos > 0:
-        speed_H = "R low"
-
-    elif x_rel_pos < 340 and x_rel_pos >= 170:
-        speed_H = "R middle"
-
-    elif x_rel_pos >= 340:
-        speed_H = "R high"
-
-    elif x_rel_pos > -170 and x_rel_pos < 0:
-        speed_H = "L low"
-
-    elif x_rel_pos > -340 and x_rel_pos <= -170:
-        speed_H = "L middle"
-
-    elif x_rel_pos <= -340:
-        speed_H = "L high"
-
-    if y_rel_pos == 0:
-        speed_V = "zero"
-
-    elif y_rel_pos < 170 and y_rel_pos > 0:
-        speed_V = "U low"
-
-    elif y_rel_pos < 340 and y_rel_pos >= 170:
-        speed_V = "U middle"
-
-    elif y_rel_pos >= 340:
-        speed_V = "U high"
-
-    elif y_rel_pos > -170 and y_rel_pos < 0:
-        speed_V = "D low"
-
-    elif y_rel_pos > -340 and y_rel_pos <= -170:
-        speed_V = "D middle"
-
-    elif y_rel_pos <= -340:
-        speed_V = "D high"
+    else:
+        mo_yspeed = 0
 
     if (abs(x_rel_pos) > 1) or (abs(y_rel_pos) > 1):
 
         if x > start_x and y > start_y:
-            print("x R: ", x_rel_pos, "Y U: ", y_rel_pos, speed_H, " ", speed_V)
+            print("x R: ", x_rel_pos, "Y U: ", y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
 
         elif x < start_x and y > start_y:
-            print("x L: ", x_rel_pos, "Y U: ", y_rel_pos, speed_H, " ", speed_V)
+            print("x L: ", x_rel_pos, "Y U: ", y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
 
         elif x > start_x and y == start_y:
-            print("x R: ", x_rel_pos, "Y C: ", y_rel_pos, speed_H, " ", speed_V)
+            print("x R: ", x_rel_pos, "Y C: ", y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
 
         elif x < start_x and y == start_y:
-            print("x L: ", x_rel_pos, "Y C: ", y_rel_pos, speed_H, " ", speed_V)
+            print("x L: ", x_rel_pos, "Y C: ", y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
 
         elif x < start_x and y < start_y:
-            print("x L: ", x_rel_pos, "Y D: ", y_rel_pos, speed_H, " ", speed_V)
+            print("x L: ", x_rel_pos, "Y D: ", y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
 
         elif x > start_x and y < start_y:
-            print("x R: ", x_rel_pos, "Y D: ", y_rel_pos, speed_H, " ", speed_V)
+            print("x R: ", x_rel_pos, "Y D: ", y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
+
         elif x == start_x and y < start_y:
-            print("x C: ", x_rel_pos, "Y D: ", y_rel_pos, speed_H, " ", speed_V)
+            print("x C: ", x_rel_pos, "Y D: ", y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
+
         elif x == start_x and y > start_y:
-            print("x C: ", x_rel_pos, "Y U: ", y_rel_pos, speed_H, " ", speed_V)
+            print("x C: ", x_rel_pos, "Y U: ", y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
+
         else:
-            print("Joystick centered", x_rel_pos, y_rel_pos, speed_H, " ", speed_V)
+            print("Joystick centered", x_rel_pos, y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
+
         last_x = x
         last_y = y
 
-        #simulierte Mausbewegungen mit Middle Whell
         macropad.mouse.click(macropad.Mouse.MIDDLE_BUTTON)
         macropad.mouse.move(x=mo_xspeed)
         macropad.mouse.move(y=(-1*mo_yspeed))
 
-    # gamepad - buttons auslesen
-    buttons = gamepad.digital_read_bulk(button_mask)
+    # gamepad - button auslesen
+    button = gamepad.button
 
-    if not buttons & (1 << BUTTON_X):
-        print("Button x pressed")
-
-    if not buttons & (1 << BUTTON_Y):
-        print("Button Y pressed")
-
-    if not buttons & (1 << BUTTON_A):
-        print("Button A pressed")
-
-    if not buttons & (1 << BUTTON_B):
-        print("Button B pressed")
-
-    if not buttons & (1 << BUTTON_SELECT):
-        print("Button Select pressed")
-
-    if not buttons & (1 << BUTTON_START):
-        print("Button Start pressed")
+    if button == 0:
+        print("Button Joy pressed")
 
     # Neokey 1x4 auslesen
     if neokey[0]:
@@ -237,13 +178,12 @@ while True:
         neokey.pixels[3] = 0x0
 
     # Encoder 1 auslesen
-    position1 = encoder1.position
+    position1 = -encoder1.position
 
     if position1 != last_position1:
         enc1_move = position1 - last_position1
         print("Position 1: {}".format(enc1_move))
 
-        # Numpad +, -
         if enc1_move == 1:
             macropad.keyboard.press(Keycode.KEYPAD_PLUS)
             macropad.keyboard.release(Keycode.KEYPAD_PLUS)
@@ -264,7 +204,7 @@ while True:
         pixel1.brightness = 0.2
         print("Button 1 released")
 
-    time.sleep(0.1)
+    time.sleep(0.01)
 
 
 # CONFIGURABLES ------------------------
