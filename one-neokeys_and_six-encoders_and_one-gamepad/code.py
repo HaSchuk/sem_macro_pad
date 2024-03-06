@@ -27,82 +27,100 @@ from adafruit_macropad import MacroPad
 from adafruit_neokey.neokey1x4 import NeoKey1x4
 from adafruit_seesaw import seesaw, rotaryio, digitalio, neopixel
 # from adafruit_seesaw.seesaw import Seesaw
-from adafruit_hid.keycode import Keycode
-# from adafruit_hid.mouse import Mouse
+from adafruit_hid.keycode import Keycode   # Kann auch über die Macros geladen werden
+from adafruit_hid.mouse import Mouse  # Kann auch über die Macros geladen werden
 
-# Initialisierung Macropad
+# Initialisierung Macropad >> Kommt noch in Zeile 246
 
 macropad = MacroPad()
 
-# use default I2C bus
+# use default I2C bus >> Initialisierung des I2C-Bus
 i2c_bus = board.I2C()
 
-# Create a NeoKey object
+# Create a NeoKey object >> Laden des Neokey1x4, Standardadresse 0x30
 neokey = NeoKey1x4(i2c_bus, addr=0x30)
 
-# Create a Joystick object
+# Create a Joystick object >> Laden Sparkfun Joystick (JS),
+# Standardadresse 0x20, aus der lib, nur ein JS möglich!!
 gamepad = sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus)
 
+# letze Positionen JS auf Null setzen
 last_x = 0
 last_y = 0
 
+# Bestimmung des Nullpunkts x, y JS, Invertierung prüfen
 start_x = 1023 - gamepad.horizontal
 start_y = 1023 - gamepad.vertical
+
+# Mousespeed x/y auf Null setzen
 mo_xspeed = None
 mo_yspeed = None
 
-# Create a Seesaw object (encoder 1)
+# Create a Seesaw object (encoder 1), weitere Encoder werden gesondert
+# über 0x37, 0x38, ... 0x3B eingebunden
 qt_enc1 = seesaw.Seesaw(i2c_bus, addr=0x36)
 
+# Encoder1, Push-Button abfragen und auf nicht gedrückt setzen
 qt_enc1.pin_mode(24, qt_enc1.INPUT_PULLUP)
 button1 = digitalio.DigitalIO(qt_enc1, 24)
 button_held1 = False
 
+# Encoder1, Drehrad abfragen, letzte relative Position auf 0 setzen
 encoder1 = rotaryio.IncrementalEncoder(qt_enc1)
 last_position1 = 0
 
+# RGB Encoder1 abfragen, LED auf Rot und Helligkeit 0.2 setzen
 pixel1 = neopixel.NeoPixel(qt_enc1, 6, 1)
 pixel1.brightness = 0.2
 pixel1.fill(0xFF0000)
 
 while True:
-    # Joystick auslesen
+    # Joystick auslesen - aktuelle Position absolut, Invertierungen prüfen
     x = 1023 - gamepad.horizontal
     y = 1023 - gamepad.vertical
+
+    # relative Position x und y bestimmen, aktuell y invertieren, Code für y prüfen
     x_rel_pos = x - start_x
     y_rel_pos = y - start_y
     y_rel_pos = -y_rel_pos
 
+    # Bei Bewegung R Vorzeichen auf 1 setzen und Mousespeed R berechnen
+    # (ln- und lin-Anteil)
     if x_rel_pos > 0:
         x_rel_pos_h = 1
         mo_xspeed_h = math.ceil(((10 * math.log(x_rel_pos)) + (x_rel_pos / 10)))
         mo_xspeed = mo_xspeed_h * x_rel_pos_h
 
+    # Bei Bewegung L Vorzeichen auf -1 setzen und Mousespeed L berechnen
+    # (ln- und lin-Anteil)
     elif x_rel_pos < 0:
         x_rel_pos_h = -1
+        # da ln nur mit positiven Zahlen funktioniert, Absoluttwert berechnen
         x_rel_pos = abs(x_rel_pos)
         mo_xspeed_h = math.ceil(((10 * math.log(x_rel_pos)) + (x_rel_pos / 10)))
-        mo_xspeed = mo_xspeed_h * x_rel_pos_h
+        mo_xspeed = mo_xspeed_h * x_rel_pos_h  # Wieder in neagtiven Wert umwandeln
 
     else:
-        mo_xspeed = 0
+        mo_xspeed = 0  # Keine Bewegung
 
-    if y_rel_pos > 0:
+    if y_rel_pos > 0:  # Bewegung U, Rest siehe Bewegung R
         y_rel_pos_h = 1
         mo_yspeed_h = math.ceil(((10 * math.log(y_rel_pos)) + (y_rel_pos / 10)))
         mo_yspeed = mo_yspeed_h * y_rel_pos_h
 
-    elif y_rel_pos < 0:
+    elif y_rel_pos < 0:  # Bewegung D, Rest siehe Bewegung L
         y_rel_pos_h = -1
         y_rel_pos = abs(y_rel_pos)
         mo_yspeed_h = math.ceil(((10 * math.log(y_rel_pos)) + (y_rel_pos / 10)))
         mo_yspeed = mo_yspeed_h * y_rel_pos_h
 
     else:
-        mo_yspeed = 0
+        mo_yspeed = 0  # Keine Bewegung
 
+    # Bestimmung, ob sich JS bewegt, Test, ob > 2, 3, ... sinnvoll wäre
     if (abs(x_rel_pos) > 1) or (abs(y_rel_pos) > 1):
 
+        # ab hier bis Zeile 147 reine Printausgaben, darauf kann später verzeicht werden
         if x > start_x and y > start_y:
             print("x R: ", x_rel_pos, "Y U: ", y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
@@ -138,21 +156,26 @@ while True:
         else:
             print("Joystick centered", x_rel_pos, y_rel_pos)
             print("MOS: ", mo_xspeed, mo_yspeed)
+        # Ende Printausgaben^^
 
+        # Position letzte Abfrage festhalten // prüfen, ob weiter gebraucht wird
         last_x = x
         last_y = y
 
+        # Bewegung Maus, durch Code ab Zeile 365 zukünftig abgearbeitet, nur Demo
         macropad.mouse.click(macropad.Mouse.MIDDLE_BUTTON)
         macropad.mouse.move(x=mo_xspeed)
         macropad.mouse.move(y=(-1*mo_yspeed))
 
-    # gamepad - button auslesen
+    # JS - button auslesen >> gamepad-Variable anpassen, besser js1
     button = gamepad.button
 
     if button == 0:
         print("Button Joy pressed")
 
-    # Neokey 1x4 auslesen
+    # Neokey 1x4 auslesen - Demo zu Abfrage,
+    # muss später weiter unten eingearbeitet werden
+    # siehe auch originalen Fork two-neokeys....
     if neokey[0]:
         print("Button A")
         neokey.pixels[0] = 0xFF0000
@@ -180,20 +203,29 @@ while True:
     # Encoder 1 auslesen
     position1 = -encoder1.position
 
+    # relative Position auslesen. -1 = Bewegung links, +1 = Bewegung rechts
     if position1 != last_position1:
         enc1_move = position1 - last_position1
+        # praktisches kleines Problem, wenn Encoder zu schnell bewegt wird,
+        # dann 1, 2, 3 >> Auswirkung im Moment kein Drama
         print("Position 1: {}".format(enc1_move))
 
         if enc1_move == 1:
+            # Encoder1 R >> Ziffernblock + drücken und loslassen,
+            # wird unten dann über Macroo gesteuert
             macropad.keyboard.press(Keycode.KEYPAD_PLUS)
             macropad.keyboard.release(Keycode.KEYPAD_PLUS)
 
         elif enc1_move == -1:
+            # Encoder1 L >> Ziffernblock - drücken und loslassen,
+            # wird unten dann über Macro gesteuert
             macropad.keyboard.press(Keycode.KEYPAD_MINUS)
             macropad.keyboard.release(Keycode.KEYPAD_MINUS)
 
         last_position1 = position1
 
+    # Demo Encoder1 Drücken Encerknopf und loslassen,
+    # LED wird heller beim Drücken >> keine praktische Anwendung
     if not button1.value and not button_held1:
         button_held1 = True
         pixel1.brightness = 0.5
@@ -204,9 +236,11 @@ while True:
         pixel1.brightness = 0.2
         print("Button 1 released")
 
+    # Schlaaaaaaaf vor nächstem Durchlauf, was ist eigentlich die Zeiteinheit?
     time.sleep(0.01)
 
 
+# Ab hier beginnt der Originalcode aus dem Projekt MacroPad Hotkeys
 # CONFIGURABLES ------------------------
 
 MACRO_FOLDER = '/macros'
