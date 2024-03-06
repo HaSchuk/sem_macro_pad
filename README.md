@@ -1,3 +1,7 @@
+ToDo:
+- [ ] Aufgabe 1
+- [ ] 
+
 # sem_macro_pad
 This project is based on the Adafruid MarcroPad: https://learn.adafruit.com/adafruit-macropad-rp2040 and is a fork of https://github.com/pixelpushinfreak/key_tickler_macro_pad
 
