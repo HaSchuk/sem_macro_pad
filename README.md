@@ -1,5 +1,5 @@
 ToDo:
-- [ ] A01 >> code.py: Dokumentation der Hardware-Abfragen bis Zeile 209
+- [X] A01 >> code.py: Dokumentation der Hardware-Abfragen bis Zeile 209
 - [ ] A02 >> code.py: Entfernen der print-Kontroll-Ausgaben
 - [ ] A03 >> code.py: Einarbeitung Hardware-Abfrage 5+ Action-Encoder mit # - Kommentierung (Anmerkung, 4 von 8 gelieferten Encodern defekt) 
 - [ ] A04 >> Macro quanta.py: Einarbeitung Action-Encoder plus Joystick
