@@ -11,7 +11,7 @@ app = {                       # REQUIRED dict, must be named 'app'
     'macros' : [              # List of button macros...
         # COLOR    LABEL    KEY SEQUENCE
         # 1st row ----------
-        (0x202000, 'S copy', [Keycode.F2]), # Satz kopieren 
+        (0x202000, 'S copy', [Keycode.F2]), # Satz kopieren
         (0x400000, 'S ins', [Keycode.F6]), # Satz einfügen
         (0x004000, 'S del', [Keycode.SHIFT, Keycode.F6]),      # Satz löschen
         # 2nd row ----------
@@ -24,9 +24,9 @@ app = {                       # REQUIRED dict, must be named 'app'
         (0xFF8000, 'Spot', [Keycode.F12]), # Reload
         # 4th row ----------
         (0x800080, 'Copy', [Keycode.CONTROL, 'c']), # Kopieren
-        (0x000000, 'All', [Keycode.CONTROL, 'a']), # leer
+        (0x000000, 'All', [Keycode.CONTROL, 'a']), # alles markieren
         (0x336600, 'Ins', [Keycode.CONTROL, 'v']), # Einfügen
- 
+
         # Encoder button ---
         (0x000000, '', [Keycode.ENTER]) # ESC
     ]
