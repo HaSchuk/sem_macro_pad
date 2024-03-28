@@ -22,9 +22,9 @@ from adafruit_neokey.neokey1x4 import NeoKey1x4
 from adafruit_seesaw import seesaw, neopixel, rotaryio, digitalio
 from adafruit_hid.keycode import Keycode
 from adafruit_hid.mouse import Mouse
-from rainbowio import colorwheel
+# from rainbowio import colorwheel
 
-am_enc = 3
+# am_enc = 3
 
 # CLASSES AND FUNCTIONS ----------------
 class App:
@@ -153,31 +153,31 @@ class SideKnob:
             if position != self.last_position:
                 print("Position: {}".format(position))
                 if position > self.last_position:  # Advance forward through the colorwheel.
-                    self.color += 10
-                    print(len(self.forward_macro))
+                    # self.color += 10
+                    # print(len(self.forward_macro))
                     if len(self.forward_macro) == 2:
-                        if self.forward_macro[1] == 'Wheel up':
+                        if self.forward_macro[1] == 'Wheel up':  # special for SEM control Magn uo, sleep time necessary
                             macropad.keyboard.press(self.forward_macro[0])
                             macropad.mouse.move(wheel = +1)
                             time.sleep(0.2)
                             macropad.keyboard.release(self.forward_macro[0])
-                        elif self.forward_macro[1] == 'Wheel down':
+                        elif self.forward_macro[1] == 'Wheel down':  # special for SEM control Magn down, sleep time necessary
                             macropad.keyboard.press(self.forward_macro[0])
                             macropad.mouse.move(wheel = -1)
                             time.sleep(0.2)
                             macropad.keyboard.release(self.forward_macro[0])
-                        if self.forward_macro[1] == 'Mouse right':
+                        if self.forward_macro[1] == 'Mouse right':  # special for SEM control Focus , sleep time necessary
                             macropad.mouse.press(macropad.Mouse.RIGHT_BUTTON)
                             macropad.mouse.move(x= +50)
                             time.sleep(0.3)
                             macropad.mouse.release(macropad.Mouse.RIGHT_BUTTON)
                             macropad.mouse.move(x= -50)
-                        elif self.forward_macro[1] == 'Mouse left':
+                        elif self.forward_macro[1] == 'Mouse left':  # special for SEM control Focus, sleep time necessary
                             macropad.mouse.press(macropad.Mouse.RIGHT_BUTTON)
                             macropad.mouse.move(x = -50)
                             time.sleep(0.3)
                             macropad.mouse.release(macropad.Mouse.RIGHT_BUTTON)
-                        else:
+                        else:  # SEM control move stage 240%
                             macropad.keyboard.send(self.forward_macro[0])
                             time.sleep(1.5)
                             macropad.keyboard.send(self.forward_macro[1])
@@ -186,30 +186,30 @@ class SideKnob:
                     else:
                         macropad.keyboard.send(*self.forward_macro)
                 else:
-                    self.color -= 10  # Advance backward through the colorwheel.
+                    # self.color -= 10  # Advance backward through the colorwheel.
                     print(len(self.reverse_macro))
                     if len(self.reverse_macro) == 2:
-                        if self.reverse_macro[1] == 'Wheel up':
+                        if self.reverse_macro[1] == 'Wheel up': # see above
                             macropad.keyboard.press(self.reverse_macro[0])
                             macropad.mouse.move(wheel = +1)
                             time.sleep(0.2)
                             macropad.keyboard.release(self.reverse_macro[0])
-                        elif self.reverse_macro[1] == 'Wheel down':
+                        elif self.reverse_macro[1] == 'Wheel down':  # see above
                             macropad.keyboard.press(self.reverse_macro[0])
                             macropad.mouse.move(wheel = -1)
                             time.sleep(0.2)
                             macropad.keyboard.release(self.reverse_macro[0])
-                        if self.reverse_macro[1] == 'Mouse right':
+                        if self.reverse_macro[1] == 'Mouse right':  # see above
                             macropad.mouse.move(x = +50)
                             time.sleep(0.3)
                             macropad.mouse.release(macropad.Mouse.RIGHT_BUTTON)
-                        elif self.reverse_macro[1] == 'Mouse left':
+                        elif self.reverse_macro[1] == 'Mouse left':  # see above
                             macropad.mouse.press(macropad.Mouse.RIGHT_BUTTON)
                             macropad.mouse.move(x = -50)
                             time.sleep(0.3)
                             macropad.mouse.release(macropad.Mouse.RIGHT_BUTTON)
                             macropad.mouse.move(x = +50)
-                        else:
+                        else:  # SEM control move stage 240%
                             macropad.keyboard.send(self.reverse_macro[0])
                             time.sleep(1.5)
                             macropad.keyboard.send(self.reverse_macro[1])
@@ -404,9 +404,9 @@ app_knob_last_position = None
 last_encoder_switch = macropad.encoder_switch_debounced.pressed
 app_index = 0
 apps[app_index].switch()
-knob_1L.setMacros(app_index, [12, 13, 14])  # have to be changed with 6 encoders
-knob_1R.setMacros(app_index, [15, 16, 17])  # have to be changed with 6 encoders
-knob_2L.setMacros(app_index, [18, 19, 20])  # have to be changed with 6 encoders
+knob_1L.setMacros(app_index, [12, 13, 14])  
+knob_1R.setMacros(app_index, [15, 16, 17])  
+knob_2L.setMacros(app_index, [18, 19, 20])  
 knob_2R.setMacros(app_index, [21, 22, 23])
 knob_3L.setMacros(app_index, [24, 25, 26])
 knob_3R.setMacros(app_index, [27, 28, 29])  # 1 = lowest row!
@@ -462,7 +462,7 @@ while True:
         # Position letzte Abfrage festhalten // prüfen, ob weiter gebraucht wird
         last_x = x
         last_y = y
-        # Bewegung Maus, durch Code ab Zeile 365 zukünftig abgearbeitet, nur Demo
+        # Bewegung Maus
         macropad.mouse.press(macropad.Mouse.MIDDLE_BUTTON)
         macropad.mouse.move(x=mo_xspeed)
         macropad.mouse.move(y=(-1*mo_yspeed))
