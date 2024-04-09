@@ -1,219 +1,22 @@
-# SPDX-FileCopyrightText: 2021 Phillip Burgess for Adafruit Industries
-#
-# SPDX-License-Identifier: MIT
-
-"""
-A macro/hotkey program for Adafruit MACROPAD. Macro setups are stored in the
-/macros folder (configurable below), load up just the ones you're likely to
-use. Plug into computer's USB port, use dial to select an application macro
-set, press MACROPAD keys to send key sequences and other USB protocols.
-"""
-
-# pylint: disable=import-error, unused-import, too-few-public-methods
-
 import os
-# import sys
 import time
+import board
 import displayio
 import terminalio
-import board
-import math
 import sparkfun_qwiicjoystick
 from adafruit_display_shapes.rect import Rect
 from adafruit_display_text import label
 from adafruit_macropad import MacroPad
-# from micropython import const
-# from rainbowio import colorwheel
 from adafruit_neokey.neokey1x4 import NeoKey1x4
-from adafruit_seesaw import seesaw, rotaryio, digitalio, neopixel
-# from adafruit_seesaw.seesaw import Seesaw
-from adafruit_hid.keycode import Keycode
-# from adafruit_hid.mouse import Mouse
-
-# Initialisierung Macropad
-
-macropad = MacroPad()
-
-# use default I2C bus
-i2c_bus = board.I2C()
-
-# Create a NeoKey object
-neokey = NeoKey1x4(i2c_bus, addr=0x30)
-
-# Create a Joystick object
-gamepad = sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus)
-
-last_x = 0
-last_y = 0
-
-start_x = 1023 - gamepad.horizontal
-start_y = 1023 - gamepad.vertical
-mo_xspeed = None
-mo_yspeed = None
-
-# Create a Seesaw object (encoder 1)
-qt_enc1 = seesaw.Seesaw(i2c_bus, addr=0x36)
-
-qt_enc1.pin_mode(24, qt_enc1.INPUT_PULLUP)
-button1 = digitalio.DigitalIO(qt_enc1, 24)
-button_held1 = False
-
-encoder1 = rotaryio.IncrementalEncoder(qt_enc1)
-last_position1 = 0
-
-pixel1 = neopixel.NeoPixel(qt_enc1, 6, 1)
-pixel1.brightness = 0.2
-pixel1.fill(0xFF0000)
-
-while True:
-    # Joystick auslesen
-    x = 1023 - gamepad.horizontal
-    y = 1023 - gamepad.vertical
-    x_rel_pos = x - start_x
-    y_rel_pos = y - start_y
-    y_rel_pos = -y_rel_pos
-
-    if x_rel_pos > 0:
-        x_rel_pos_h = 1
-        mo_xspeed_h = math.ceil(((10 * math.log(x_rel_pos)) + (x_rel_pos / 10)))
-        mo_xspeed = mo_xspeed_h * x_rel_pos_h
-
-    elif x_rel_pos < 0:
-        x_rel_pos_h = -1
-        x_rel_pos = abs(x_rel_pos)
-        mo_xspeed_h = math.ceil(((10 * math.log(x_rel_pos)) + (x_rel_pos / 10)))
-        mo_xspeed = mo_xspeed_h * x_rel_pos_h
-
-    else:
-        mo_xspeed = 0
-
-    if y_rel_pos > 0:
-        y_rel_pos_h = 1
-        mo_yspeed_h = math.ceil(((10 * math.log(y_rel_pos)) + (y_rel_pos / 10)))
-        mo_yspeed = mo_yspeed_h * y_rel_pos_h
-
-    elif y_rel_pos < 0:
-        y_rel_pos_h = -1
-        y_rel_pos = abs(y_rel_pos)
-        mo_yspeed_h = math.ceil(((10 * math.log(y_rel_pos)) + (y_rel_pos / 10)))
-        mo_yspeed = mo_yspeed_h * y_rel_pos_h
-
-    else:
-        mo_yspeed = 0
-
-    if (abs(x_rel_pos) > 1) or (abs(y_rel_pos) > 1):
-
-        if x > start_x and y > start_y:
-            print("x R: ", x_rel_pos, "Y U: ", y_rel_pos)
-            print("MOS: ", mo_xspeed, mo_yspeed)
-
-        elif x < start_x and y > start_y:
-            print("x L: ", x_rel_pos, "Y U: ", y_rel_pos)
-            print("MOS: ", mo_xspeed, mo_yspeed)
-
-        elif x > start_x and y == start_y:
-            print("x R: ", x_rel_pos, "Y C: ", y_rel_pos)
-            print("MOS: ", mo_xspeed, mo_yspeed)
-
-        elif x < start_x and y == start_y:
-            print("x L: ", x_rel_pos, "Y C: ", y_rel_pos)
-            print("MOS: ", mo_xspeed, mo_yspeed)
-
-        elif x < start_x and y < start_y:
-            print("x L: ", x_rel_pos, "Y D: ", y_rel_pos)
-            print("MOS: ", mo_xspeed, mo_yspeed)
-
-        elif x > start_x and y < start_y:
-            print("x R: ", x_rel_pos, "Y D: ", y_rel_pos)
-            print("MOS: ", mo_xspeed, mo_yspeed)
-
-        elif x == start_x and y < start_y:
-            print("x C: ", x_rel_pos, "Y D: ", y_rel_pos)
-            print("MOS: ", mo_xspeed, mo_yspeed)
-
-        elif x == start_x and y > start_y:
-            print("x C: ", x_rel_pos, "Y U: ", y_rel_pos)
-            print("MOS: ", mo_xspeed, mo_yspeed)
-
-        else:
-            print("Joystick centered", x_rel_pos, y_rel_pos)
-            print("MOS: ", mo_xspeed, mo_yspeed)
-
-        last_x = x
-        last_y = y
-
-        macropad.mouse.click(macropad.Mouse.MIDDLE_BUTTON)
-        macropad.mouse.move(x=mo_xspeed)
-        macropad.mouse.move(y=(-1*mo_yspeed))
-
-    # gamepad - button auslesen
-    button = gamepad.button
-
-    if button == 0:
-        print("Button Joy pressed")
-
-    # Neokey 1x4 auslesen
-    if neokey[0]:
-        print("Button A")
-        neokey.pixels[0] = 0xFF0000
-    else:
-        neokey.pixels[0] = 0x0
-
-    if neokey[1]:
-        print("Button B")
-        neokey.pixels[1] = 0xFFFF00
-    else:
-        neokey.pixels[1] = 0x0
-
-    if neokey[2]:
-        print("Button C")
-        neokey.pixels[2] = 0x00FF00
-    else:
-        neokey.pixels[2] = 0x0
-
-    if neokey[3]:
-        print("Button D")
-        neokey.pixels[3] = 0x00FFFF
-    else:
-        neokey.pixels[3] = 0x0
-
-    # Encoder 1 auslesen
-    position1 = -encoder1.position
-
-    if position1 != last_position1:
-        enc1_move = position1 - last_position1
-        print("Position 1: {}".format(enc1_move))
-
-        if enc1_move == 1:
-            macropad.keyboard.press(Keycode.KEYPAD_PLUS)
-            macropad.keyboard.release(Keycode.KEYPAD_PLUS)
-
-        elif enc1_move == -1:
-            macropad.keyboard.press(Keycode.KEYPAD_MINUS)
-            macropad.keyboard.release(Keycode.KEYPAD_MINUS)
-
-        last_position1 = position1
-
-    if not button1.value and not button_held1:
-        button_held1 = True
-        pixel1.brightness = 0.5
-        print("Button 1 pressed")
-
-    if button1.value and button_held1:
-        button_held1 = False
-        pixel1.brightness = 0.2
-        print("Button 1 released")
-
-    time.sleep(0.01)
-
-
-# CONFIGURABLES ------------------------
-
-MACRO_FOLDER = '/macros'
-
+from adafruit_seesaw import seesaw
+from rainbowio import colorwheel
+from config import Config # Configuration management in a separate file (config.py)
+from handler_sidekeys import SideKeys
+from handler_sideknob import SideKnob
+from handler_joystick import JoyStick
+#from handler_macropad import MacroPad
 
 # CLASSES AND FUNCTIONS ----------------
-
 class App:
     """ Class representing a host-side application, for which we have a set
         of macro sequences. Project code was originally more complex and
@@ -221,11 +24,14 @@ class App:
     def __init__(self, appdata):
         self.name = appdata['name']
         self.macros = appdata['macros']
+        self.enter_macro = appdata['enter_macro']
+        self.exit_macro = appdata['exit_macro']
 
     def switch(self):
         """ Activate application settings; update OLED labels and LED
             colors. """
         group[13].text = self.name   # Application name
+
         for i in range(12):
             if i < len(self.macros):  # Key in use, set label + LED color
                 macropad.pixels[i] = self.macros[i][0]
@@ -233,16 +39,30 @@ class App:
             else:  # Key not in use, no label or LED
                 macropad.pixels[i] = 0
                 group[i].text = ''
+
         macropad.keyboard.release_all()
-        macropad.consumer_control.release()
         macropad.mouse.release_all()
-        macropad.stop_tone()
         macropad.pixels.show()
         macropad.display.refresh()
 
+def millis():
+    return round(time.time() * 1000)
+
+# CONFIGURABLES ------------------------
+pixels_enabled = True
+last_pixels_enabled_state = True
+last_app_switch_time = millis()
+app_switch_temp_lighting = False
+
+key_to_app_map = { 1 : 'Lisa.LIMS',
+                   0 : 'Quanta'}
 
 # INITIALIZATION -----------------------
 
+# use default I2C bus
+i2c_bus = board.I2C()
+
+# MacroPad
 macropad = MacroPad()
 macropad.display.auto_refresh = False
 macropad.pixels.auto_write = False
@@ -261,22 +81,28 @@ group.append(Rect(0, 0, macropad.display.width, 12, fill=0xFFFFFF))
 group.append(label.Label(terminalio.FONT, text='', color=0x000000,
                          anchored_position=(macropad.display.width//2, -2),
                          anchor_point=(0.5, 0.0)))
-macropad.display.root_group = group
+macropad.display.show(group)
 
 # Load all the macro key setups from .py files in MACRO_FOLDER
 apps = []
-files = os.listdir(MACRO_FOLDER)
+app_map = {}
+files = os.listdir(Config.Globals.MACRO_FOLDER)
 files.sort()
+idx = 0
 for filename in files:
     if filename.endswith('.py') and not filename.startswith('._'):
         try:
-            module = __import__(MACRO_FOLDER + '/' + filename[:-3])
-            apps.append(App(module.app))
+            module = __import__(Config.Globals.MACRO_FOLDER + '/' + filename[:-3])
+            app = App(module.app)
+            apps.append(app)
+            app_map[app.name] = idx
+            idx += 1
         except (SyntaxError, ImportError, AttributeError, KeyError, NameError,
                 IndexError, TypeError) as err:
             print("ERROR in", filename)
             import traceback
             traceback.print_exception(err, err, err.__traceback__)
+            pass
 
 if not apps:
     group[13].text = 'NO MACRO FILES FOUND'
@@ -284,39 +110,148 @@ if not apps:
     while True:
         pass
 
-last_position = None
+app_knob_last_position = None
 last_encoder_switch = macropad.encoder_switch_debounced.pressed
 app_index = 0
 apps[app_index].switch()
 
+# side keys
+neokey1 = SideKeys(NeoKey1x4(i2c_bus, addr=0x30), macropad)
+
+# side rotary encoders
+knob_1L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x36), macropad, apps)
+knob_1R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x37), macropad, apps)
+knob_2L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x38), macropad, apps)
+knob_2R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x39), macropad, apps)
+knob_3L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x3A), macropad, apps)
+knob_3R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x3B), macropad, apps)
+knob_1L.setMacros(app_index, [12, 13, 14])  # have to be changed with 6 encoders
+knob_1R.setMacros(app_index, [15, 16, 17])  # have to be changed with 6 encoders
+knob_2L.setMacros(app_index, [18, 19, 20])  # have to be changed with 6 encoders
+knob_2R.setMacros(app_index, [21, 22, 23])
+knob_3L.setMacros(app_index, [24, 25, 26])
+knob_3R.setMacros(app_index, [27, 28, 29])  # 1 = lowest row!
+
+# Create a Joystick object >> Laden Sparkfun Joystick (JS),
+# Standardadresse 0x20, aus der lib, nur ein JS möglich!!
+# joy = Joy(sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus))
+
+# Initialisation Joystick 
+joystick_1R = JoyStick(sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus), macropad)
 
 # MAIN LOOP ----------------------------
-
+app_knob_position = 0
 while True:
-    # Read encoder position. If it's changed, switch apps.
-    position = macropad.encoder
-    if position != last_position:
-        app_index = position % len(apps)
-        apps[app_index].switch()
-        last_position = position
+    # ----------- JoyStick ---------------
+    joystick_1R.update()
 
-    # Handle encoder button. If state has changed, and if there's a
-    # corresponding macro, set up variables to act on this just like
-    # the keypad keys, as if it were a 13th key/macro.
+    # ----------- Neokeys ---------------
+    neokey1.update()
+    # ----------- End Neokeys ---------------
+
+    # ----------- knobs --------------------
+    knob_1L.update()  # to be extented and changed with 6 encoders
+    knob_1R.update()
+    knob_2L.update()
+    knob_2R.update()
+    knob_3L.update()
+    knob_3R.update()
+    # ----------- END knobs --------------------
+
+    # -- cut the lights after 1 second if not enabled
+    if not pixels_enabled:
+        if (millis() - last_app_switch_time > 1000) and app_switch_temp_lighting:
+            for i in range(12):
+                macropad.pixels[i] = 0x000000
+            knob_1L.pixel.fill(0x000000)
+            knob_1R.pixel.fill(0x000000)
+            knob_2L.pixel.fill(0x000000)
+            knob_2R.pixel.fill(0x000000)
+            knob_3L.pixel.fill(0x000000)
+            knob_3R.pixel.fill(0x000000)
+            macropad.pixels.show()
+            app_switch_temp_lighting = False
+
+    # -- app switch check (from encoder or sidekeys).
+    app_knob_position = macropad.encoder
+
+    if neokey1.pressed_index == 0 or neokey1.pressed_index == 1:
+        app_name = key_to_app_map[neokey1.pressed_index]
+        if apps[app_index].exit_macro:
+            macropad.keyboard.send(*apps[app_index].exit_macro)
+        app_index = app_map[app_name]
+        apps[app_index].switch()
+        if apps[app_index].enter_macro:
+            macropad.keyboard.send(*apps[app_index].enter_macro)
+        knob_1L.setMacros(app_index, [12, 13, 14])
+        knob_1R.setMacros(app_index, [15, 16, 17])
+        knob_2L.setMacros(app_index, [18, 19, 20])
+        knob_2R.setMacros(app_index, [21, 22, 23])
+        knob_3L.setMacros(app_index, [24, 25, 17])  # 1 = lowest row!
+        knob_3R.setMacros(app_index, [27, 28, 29])
+        last_app_switch_time = millis()
+        app_switch_temp_lighting = True
+    elif app_knob_position != app_knob_last_position:
+        app_index = app_knob_position % len(apps)
+        apps[app_index].switch()
+        knob_1L.setMacros(app_index, [12, 13, 14])
+        knob_1R.setMacros(app_index, [15, 16, 17])
+        knob_2L.setMacros(app_index, [18, 19, 20])
+        knob_2R.setMacros(app_index, [21, 22, 23])
+        knob_3L.setMacros(app_index, [24, 25, 17])  # 1 = lowest row!
+        knob_3R.setMacros(app_index, [27, 28, 29])
+        # macropad.play_file("pop.wav")
+        app_knob_last_position = app_knob_position
+        last_app_switch_time = millis()
+        app_switch_temp_lighting = True
+
+    # ------------------------ Macro key events ------------------------
+    # -- Handle encoder button - switch LEDs off/on.
     macropad.encoder_switch_debounced.update()
     encoder_switch = macropad.encoder_switch_debounced.pressed
-    if encoder_switch != last_encoder_switch:
-        last_encoder_switch = encoder_switch
-        if len(apps[app_index].macros) < 13:
-            continue    # No 13th macro, just resume main loop
-        key_number = 12  # else process below as 13th macro
-        pressed = encoder_switch
-    else:
-        event = macropad.keys.events.get()
-        if not event or event.key_number >= len(apps[app_index].macros):
-            continue  # No key events, or no corresponding macro, resume loop
-        key_number = event.key_number
-        pressed = event.pressed
+    if encoder_switch:
+        pixels_enabled = not pixels_enabled
+
+        if pixels_enabled != last_pixels_enabled_state:
+            last_pixels_enabled_state = pixels_enabled
+
+            if pixels_enabled:
+                for i in range(12):
+                    macropad.pixels[i] = apps[app_index].macros[i][0]
+                knob_1L.pixel.fill(colorwheel(knob_1L.color))
+                knob_1R.pixel.fill(colorwheel(knob_1R.color))
+                knob_2L.pixel.fill(colorwheel(knob_2L.color))
+                knob_2R.pixel.fill(colorwheel(knob_2R.color))
+                knob_3L.pixel.fill(colorwheel(knob_3L.color))
+                knob_3R.pixel.fill(colorwheel(knob_3R.color))
+                neokey1.setAllPixels(neokey1.color)
+            else:
+                for i in range(12):
+                    macropad.pixels[i] = 0x000000
+                knob_1L.pixel.fill(0x000000)
+                knob_1R.pixel.fill(0x000000)
+                knob_2L.pixel.fill(0x000000)
+                knob_2R.pixel.fill(0x000000)
+                knob_3L.pixel.fill(0x000000)
+                knob_3R.pixel.fill(0x000000)
+                neokey1.setAllPixels(0x0)
+
+            knob_1L.pixels_enabled = pixels_enabled
+            knob_1R.pixels_enabled = pixels_enabled
+            knob_2L.pixels_enabled = pixels_enabled
+            knob_2R.pixels_enabled = pixels_enabled
+            knob_3L.pixels_enabled = pixels_enabled
+            knob_3R.pixels_enabled = pixels_enabled
+            neokey1.pixels_enabled = pixels_enabled
+
+            macropad.pixels.show()
+            continue
+
+    event = macropad.keys.events.get()
+    if not event or event.key_number >= len(apps[app_index].macros):
+        continue  # No key events, or no corresponding macro, resume loop
+    key_number = event.key_number
+    pressed = event.pressed
 
     # If code reaches here, a key or the encoder button WAS pressed/released
     # and there IS a corresponding macro available for it...other situations
@@ -324,33 +259,16 @@ while True:
 
     sequence = apps[app_index].macros[key_number][2]
     if pressed:
-        # 'sequence' is an arbitrary-length list, each item is one of:
-        # Positive integer (e.g. Keycode.KEYPAD_MINUS): key pressed
-        # Negative integer: (absolute value) key released
-        # Float (e.g. 0.25): delay in seconds
-        # String (e.g. "Foo"): corresponding keys pressed & released
-        # List []: one or more Consumer Control codes (can also do float delay)
-        # Dict {}: mouse buttons/motion (might extend in future)
-        if key_number < 12:  # No pixel for encoder button
-            macropad.pixels[key_number] = 0xFFFFFF
-            macropad.pixels.show()
+
+        macropad.pixels[key_number] = 0xFF2000
+        macropad.pixels.show()
+
         for item in sequence:
             if isinstance(item, int):
                 if item >= 0:
                     macropad.keyboard.press(item)
                 else:
                     macropad.keyboard.release(-item)
-            elif isinstance(item, float):
-                time.sleep(item)
-            elif isinstance(item, str):
-                macropad.keyboard_layout.write(item)
-            elif isinstance(item, list):
-                for code in item:
-                    if isinstance(code, int):
-                        macropad.consumer_control.release()
-                        macropad.consumer_control.press(code)
-                    if isinstance(code, float):
-                        time.sleep(code)
             elif isinstance(item, dict):
                 if 'buttons' in item:
                     if item['buttons'] >= 0:
@@ -360,31 +278,28 @@ while True:
                 macropad.mouse.move(item['x'] if 'x' in item else 0,
                                     item['y'] if 'y' in item else 0,
                                     item['wheel'] if 'wheel' in item else 0)
-                if 'tone' in item:
-                    if item['tone'] > 0:
-                        macropad.stop_tone()
-                        macropad.start_tone(item['tone'])
-                    else:
-                        macropad.stop_tone()
-                elif 'play' in item:
-                    macropad.play_file(item['play'])
+            else:
+                macropad.keyboard_layout.write(item)
+
+        # macropad.start_tone(Config.MarcoPad.keypress_tones[key_number])
+
     else:
-        # Release any still-pressed keys, consumer codes, mouse buttons
-        # Keys and mouse buttons are individually released this way (rather
-        # than release_all()) because pad supports multi-key rollover, e.g.
-        # could have a meta key or right-mouse held down by one macro and
-        # press/release keys/buttons with others. Navigate popups, etc.
+        # macropad.stop_tone()
+
         for item in sequence:
-            if isinstance(item, int):
-                if item >= 0:
-                    macropad.keyboard.release(item)
+            if isinstance(item, int) and item >= 0:
+                macropad.keyboard.release(item)
             elif isinstance(item, dict):
                 if 'buttons' in item:
                     if item['buttons'] >= 0:
                         macropad.mouse.release(item['buttons'])
-                elif 'tone' in item:
-                    macropad.stop_tone()
-        macropad.consumer_control.release()
-        if key_number < 12:  # No pixel for encoder button
+        if pixels_enabled:
             macropad.pixels[key_number] = apps[app_index].macros[key_number][0]
-            macropad.pixels.show()
+        else:
+            macropad.pixels[key_number] = 0x000000
+
+        macropad.pixels.show()
+
+
+
+
