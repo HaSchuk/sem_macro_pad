@@ -1,7 +1,6 @@
 import os
 import time
 import board
-import board
 import displayio
 import terminalio
 import sparkfun_qwiicjoystick
@@ -27,14 +26,11 @@ class App:
         self.macros = appdata['macros']
         self.enter_macro = appdata['enter_macro']
         self.exit_macro = appdata['exit_macro']
-        self.enter_macro = appdata['enter_macro']
-        self.exit_macro = appdata['exit_macro']
 
     def switch(self):
         """ Activate application settings; update OLED labels and LED
             colors. """
         group[13].text = self.name   # Application name
-
 
         for i in range(12):
             if i < len(self.macros):  # Key in use, set label + LED color
@@ -43,7 +39,6 @@ class App:
             else:  # Key not in use, no label or LED
                 macropad.pixels[i] = 0
                 group[i].text = ''
-
 
         macropad.keyboard.release_all()
         macropad.mouse.release_all()
@@ -72,43 +67,6 @@ macropad = MacroPad()
 macropad.display.auto_refresh = False
 macropad.pixels.auto_write = False
 
-# use default I2C bus
-i2c_bus = board.I2C()
-
-# side keys
-neokey1 = SideKeys(NeoKey1x4(i2c_bus, addr=0x30))
-
-# side rotary encoders
-knob_1L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x36))
-knob_1R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x37))
-knob_2L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x38))
-knob_2R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x39))
-knob_3L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x3A))
-knob_3R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x3B))
-
-# Create a Joystick object >> Laden Sparkfun Joystick (JS),
-# Standardadresse 0x20, aus der lib, nur ein JS möglich!!
-# joy = Joy(sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus))
-
-# Initialisation Joystick conventional
-
-joy = sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus)
-
-# letze Positionen JS auf Null setzen
-last_x = 0
-last_y = 0
-
-# Bestimmung des Nullpunkts x, y JS, Invertierung prüfen
-for i in range(3):
-    start_x = 1023 - joy.horizontal
-    start_y = 1023 - joy.vertical
-
-
-# Mousespeed x/y auf Null setzen
-mo_xspeed = None
-mo_yspeed = None
-
-
 # Set up displayio group with all the labels
 group = displayio.Group()
 for key_index in range(12):
@@ -124,14 +82,12 @@ group.append(label.Label(terminalio.FONT, text='', color=0x000000,
                          anchored_position=(macropad.display.width//2, -2),
                          anchor_point=(0.5, 0.0)))
 macropad.display.show(group)
-macropad.display.show(group)
 
 # Load all the macro key setups from .py files in MACRO_FOLDER
 apps = []
 app_map = {}
 files = os.listdir(Config.Globals.MACRO_FOLDER)
 files.sort()
-idx = 0
 idx = 0
 for filename in files:
     if filename.endswith('.py') and not filename.startswith('._'):
@@ -147,7 +103,6 @@ for filename in files:
             import traceback
             traceback.print_exception(err, err, err.__traceback__)
             pass
-            pass
 
 if not apps:
     group[13].text = 'NO MACRO FILES FOUND'
@@ -155,7 +110,6 @@ if not apps:
     while True:
         pass
 
-app_knob_last_position = None
 app_knob_last_position = None
 last_encoder_switch = macropad.encoder_switch_debounced.pressed
 app_index = 0
@@ -186,7 +140,6 @@ knob_3R.setMacros(app_index, [27, 28, 29])  # 1 = lowest row!
 joystick_1R = JoyStick(sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus), macropad)
 
 # MAIN LOOP ----------------------------
-app_knob_position = 0
 app_knob_position = 0
 while True:
     # ----------- JoyStick ---------------
@@ -254,64 +207,8 @@ while True:
 
     # ------------------------ Macro key events ------------------------
     # -- Handle encoder button - switch LEDs off/on.
-        knob_1L.setMacros(app_index, [12, 13, 14])
-        knob_1R.setMacros(app_index, [15, 16, 17])
-        knob_2L.setMacros(app_index, [18, 19, 20])
-        knob_2R.setMacros(app_index, [21, 22, 23])
-        knob_3L.setMacros(app_index, [24, 25, 17])  # 1 = lowest row!
-        knob_3R.setMacros(app_index, [27, 28, 29])
-        # macropad.play_file("pop.wav")
-        app_knob_last_position = app_knob_position
-        last_app_switch_time = millis()
-        app_switch_temp_lighting = True
-
-    # ------------------------ Macro key events ------------------------
-    # -- Handle encoder button - switch LEDs off/on.
     macropad.encoder_switch_debounced.update()
     encoder_switch = macropad.encoder_switch_debounced.pressed
-    if encoder_switch:
-        pixels_enabled = not pixels_enabled
-
-        if pixels_enabled != last_pixels_enabled_state:
-            last_pixels_enabled_state = pixels_enabled
-
-            if pixels_enabled:
-                for i in range(12):
-                    macropad.pixels[i] = apps[app_index].macros[i][0]
-                knob_1L.pixel.fill(colorwheel(knob_1L.color))
-                knob_1R.pixel.fill(colorwheel(knob_1R.color))
-                knob_2L.pixel.fill(colorwheel(knob_2L.color))
-                knob_2R.pixel.fill(colorwheel(knob_2R.color))
-                knob_3L.pixel.fill(colorwheel(knob_3L.color))
-                knob_3R.pixel.fill(colorwheel(knob_3R.color))
-                neokey1.setAllPixels(neokey1.color)
-            else:
-                for i in range(12):
-                    macropad.pixels[i] = 0x000000
-                knob_1L.pixel.fill(0x000000)
-                knob_1R.pixel.fill(0x000000)
-                knob_2L.pixel.fill(0x000000)
-                knob_2R.pixel.fill(0x000000)
-                knob_3L.pixel.fill(0x000000)
-                knob_3R.pixel.fill(0x000000)
-                neokey1.setAllPixels(0x0)
-
-            knob_1L.pixels_enabled = pixels_enabled
-            knob_1R.pixels_enabled = pixels_enabled
-            knob_2L.pixels_enabled = pixels_enabled
-            knob_2R.pixels_enabled = pixels_enabled
-            knob_3L.pixels_enabled = pixels_enabled
-            knob_3R.pixels_enabled = pixels_enabled
-            neokey1.pixels_enabled = pixels_enabled
-
-            macropad.pixels.show()
-            continue
-
-    event = macropad.keys.events.get()
-    if not event or event.key_number >= len(apps[app_index].macros):
-        continue  # No key events, or no corresponding macro, resume loop
-    key_number = event.key_number
-    pressed = event.pressed
     if encoder_switch:
         pixels_enabled = not pixels_enabled
 
@@ -366,10 +263,6 @@ while True:
         macropad.pixels[key_number] = 0xFF2000
         macropad.pixels.show()
 
-
-        macropad.pixels[key_number] = 0xFF2000
-        macropad.pixels.show()
-
         for item in sequence:
             if isinstance(item, int):
                 if item >= 0:
@@ -393,11 +286,7 @@ while True:
     else:
         # macropad.stop_tone()
 
-        # macropad.stop_tone()
-
         for item in sequence:
-            if isinstance(item, int) and item >= 0:
-                macropad.keyboard.release(item)
             if isinstance(item, int) and item >= 0:
                 macropad.keyboard.release(item)
             elif isinstance(item, dict):
@@ -405,16 +294,7 @@ while True:
                     if item['buttons'] >= 0:
                         macropad.mouse.release(item['buttons'])
         if pixels_enabled:
-        if pixels_enabled:
             macropad.pixels[key_number] = apps[app_index].macros[key_number][0]
-        else:
-            macropad.pixels[key_number] = 0x000000
-
-        macropad.pixels.show()
-
-
-
-
         else:
             macropad.pixels[key_number] = 0x000000
 
