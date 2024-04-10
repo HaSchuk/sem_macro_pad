@@ -28,30 +28,30 @@ app = {                       # REQUIRED dict, must be named 'app'
         (0x800080, 'ScaCon', [Keycode.CONTROL, 'm']), # Full frame scanning conditions
         (0x202020, 'SaveI', [Keycode.CONTROL, 's']), # saves image
         (0x000080, 'LPos', [Keycode.CONTROL, 'z']), # moves stage to the last position
-        # 1L Encoder ---
-        (0x004000, '', [Keycode.SHIFT, 'Wheel up']),  # Magn fine up
-        (0x004000, '', [Keycode.SHIFT, 'Wheel down']),  # Magn fine down
-        (0x004000, '', []), # button, not used
-        # 1R Encoder ---
-        (0x400000, '', [Keycode.CONTROL, 'Mouse right']), # Focus up
-        (0x400000, '', [Keycode.CONTROL, 'Mouse left']),  # Focus down
-        (0x400000, '', []),  # button, not used
-        # 2L Encoder ---
-        (0x004000, '', [Keycode.CONTROL, 'Wheel up']),  # Magn coarse up
-        (0x004000, '', [Keycode.CONTROL, 'Wheel down']),  # Magn coarse down
-        (0x400000, '', []),  # button, not used
-        # 2R Encoder ---
-        (0x380000, '', [Keycode.RIGHT_ARROW, Keycode.RIGHT_ARROW]),  # 240% IMA right
-        (0x380000, '', [Keycode.LEFT_ARROW, Keycode.LEFT_ARROW]),   # 240% IMA left
-        (0x400000, '', []),  # button, not used
-        # 3L Encoder ---
-        (0x380000, '', [Keycode.KEYPAD_MINUS]),  # Magn x2 up
-        (0x380000, '', [Keycode.KEYPAD_PLUS]),   # Magn x2 down
-        (0x380000, '', []),   # button, not used
-        # 3R Encoder ---
-        (0x380000, '', [Keycode.UP_ARROW, Keycode.UP_ARROW]),  # 240% IMA up
-        (0x380000, '', [Keycode.DOWN_ARROW, Keycode.DOWN_ARROW]),  # 240% IMA down
-        (0x400000, '', []),  # button, not used
+        # 1L Encoder --- RED
+        (0xFF0000, '', [Keycode.SHIFT, 'Wheel up']),  # Magn fine up
+        (0xFF0000, '', [Keycode.SHIFT, 'Wheel down']),  # Magn fine down
+        (0xFF0000, '', []), # button, not used
+        # 1R Encoder --- GREEN
+        (0x00FF00, '', [Keycode.CONTROL, 'Mouse right']), # Focus up
+        (0x00FF00, '', [Keycode.CONTROL, 'Mouse left']),  # Focus down
+        (0x00FF00, '', []),  # button, not used
+        # 2L Encoder --- BLUE
+        (0x0000FF, '', [Keycode.CONTROL, 'Wheel up']),  # Magn coarse up
+        (0x0000FF, '', [Keycode.CONTROL, 'Wheel down']),  # Magn coarse down
+        (0x0000FF, '', []),  # button, not used
+        # 2R Encoder --- YELLOW
+        (0xFFFF00, '', [Keycode.RIGHT_ARROW, Keycode.RIGHT_ARROW]),  # 240% IMA right
+        (0xFFFF00, '', [Keycode.LEFT_ARROW, Keycode.LEFT_ARROW]),   # 240% IMA left
+        (0xFFFF00, '', []),  # button, not used
+        # 3L Encoder --- MAGENTA
+        (0xFF00FF, '', [Keycode.KEYPAD_MINUS]),  # Magn x2 up
+        (0xFF00FF, '', [Keycode.KEYPAD_PLUS]),   # Magn x2 down
+        (0xFF00FF, '', []),   # button, not used
+        # 3R Encoder --- Cyan
+        (0x00FFFF, '', [Keycode.UP_ARROW, Keycode.UP_ARROW]),  # 240% IMA up
+        (0x00FFFF, '', [Keycode.DOWN_ARROW, Keycode.DOWN_ARROW]),  # 240% IMA down
+        (0x00FFFF, '', []),  # button, not used
 
     ]
 }

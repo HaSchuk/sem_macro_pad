@@ -1,5 +1,4 @@
 import os
-import time
 import board
 import displayio
 import terminalio
@@ -30,28 +29,58 @@ class App:
     def switch(self):
         """ Activate application settings; update OLED labels and LED
             colors. """
-        group[13].text = self.name   # Application name
+        display_group[13].text = self.name   # Application name
 
         for i in range(12):
             if i < len(self.macros):  # Key in use, set label + LED color
                 macropad.pixels[i] = self.macros[i][0]
-                group[i].text = self.macros[i][1]
+                display_group[i].text = self.macros[i][1]
             else:  # Key not in use, no label or LED
                 macropad.pixels[i] = 0
-                group[i].text = ''
+                display_group[i].text = ''
 
         macropad.keyboard.release_all()
         macropad.mouse.release_all()
         macropad.pixels.show()
         macropad.display.refresh()
 
-def millis():
-    return round(time.time() * 1000)
+class Main:
+    def __init__(self):
+        self.initialize_hardware()
+
+    def initialize_hardware(self):
+        # use default I2C bus
+        self.i2c_bus = board.I2C()
+        # MacroPad
+        self.macropad = MacroPad()
+        self.macropad.display.auto_refresh = False
+        self.macropad.pixels.auto_write = False
+        # SideKeys
+        self.neokey1 = SideKeys(NeoKey1x4(i2c_bus, addr=0x30), macropad)
+        # Display
+        self.initialize_display()
+
+    def initialize_display(self):
+        # Set up displayio display_group with all the labels
+        self.display_group = displayio.Group()
+        for key_index in range(12):
+            x = key_index % 3
+            y = key_index // 3
+            display_group.append(label.Label(terminalio.FONT, text='', color=0xFFFFFF,
+                                    anchored_position=((macropad.display.width - 1) * x / 2,
+                                                        macropad.display.height - 1 -
+                                                        (3 - y) * 12),
+                                    anchor_point=(x / 2, 1.0)))
+        display_group.append(Rect(0, 0, macropad.display.width, 12, fill=0xFFFFFF))
+        display_group.append(label.Label(terminalio.FONT, text='', color=0x000000,
+                                anchored_position=(macropad.display.width//2, -2),
+                                anchor_point=(0.5, 0.0)))
+        macropad.display.show(display_group)
 
 # CONFIGURABLES ------------------------
 pixels_enabled = True
 last_pixels_enabled_state = True
-last_app_switch_time = millis()
+last_app_switch_time = Config.GlobalFunctions.get_millis()
 app_switch_temp_lighting = False
 
 key_to_app_map = { 1 : 'Lisa.LIMS',
@@ -60,28 +89,28 @@ key_to_app_map = { 1 : 'Lisa.LIMS',
 # INITIALIZATION -----------------------
 
 # use default I2C bus
-i2c_bus = board.I2C()
+i2c_bus = board.I2C() #Main
 
 # MacroPad
-macropad = MacroPad()
-macropad.display.auto_refresh = False
-macropad.pixels.auto_write = False
+macropad = MacroPad() #In Main
+macropad.display.auto_refresh = False #Main
+macropad.pixels.auto_write = False #Main
 
-# Set up displayio group with all the labels
-group = displayio.Group()
-for key_index in range(12):
-    x = key_index % 3
-    y = key_index // 3
-    group.append(label.Label(terminalio.FONT, text='', color=0xFFFFFF,
-                             anchored_position=((macropad.display.width - 1) * x / 2,
-                                                macropad.display.height - 1 -
-                                                (3 - y) * 12),
-                             anchor_point=(x / 2, 1.0)))
-group.append(Rect(0, 0, macropad.display.width, 12, fill=0xFFFFFF))
-group.append(label.Label(terminalio.FONT, text='', color=0x000000,
-                         anchored_position=(macropad.display.width//2, -2),
-                         anchor_point=(0.5, 0.0)))
-macropad.display.show(group)
+# Set up displayio display_group with all the labels
+display_group = displayio.Group() #Main
+for key_index in range(12): #Main
+    x = key_index % 3 #Main
+    y = key_index // 3 #Main
+    display_group.append(label.Label(terminalio.FONT, text='', color=0xFFFFFF, #Main
+                             anchored_position=((macropad.display.width - 1) * x / 2, #Main
+                                                macropad.display.height - 1 - #Main
+                                                (3 - y) * 12), #Main
+                             anchor_point=(x / 2, 1.0))) #Main
+display_group.append(Rect(0, 0, macropad.display.width, 12, fill=0xFFFFFF)) #Main
+display_group.append(label.Label(terminalio.FONT, text='', color=0x000000, #Main
+                         anchored_position=(macropad.display.width//2, -2), #Main
+                         anchor_point=(0.5, 0.0))) #Main
+macropad.display.show(display_group) #Main
 
 # Load all the macro key setups from .py files in MACRO_FOLDER
 apps = []
@@ -105,7 +134,7 @@ for filename in files:
             pass
 
 if not apps:
-    group[13].text = 'NO MACRO FILES FOUND'
+    display_group[13].text = 'NO MACRO FILES FOUND'
     macropad.display.refresh()
     while True:
         pass
@@ -116,7 +145,7 @@ app_index = 0
 apps[app_index].switch()
 
 # side keys
-neokey1 = SideKeys(NeoKey1x4(i2c_bus, addr=0x30), macropad)
+neokey1 = SideKeys(NeoKey1x4(i2c_bus, addr=0x30), macropad) #Main
 
 # side rotary encoders
 knob_1L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x36), macropad, apps)
@@ -125,18 +154,16 @@ knob_2L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x38), macropad, apps)
 knob_2R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x39), macropad, apps)
 knob_3L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x3A), macropad, apps)
 knob_3R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x3B), macropad, apps)
-knob_1L.setMacros(app_index, [12, 13, 14])  # have to be changed with 6 encoders
-knob_1R.setMacros(app_index, [15, 16, 17])  # have to be changed with 6 encoders
-knob_2L.setMacros(app_index, [18, 19, 20])  # have to be changed with 6 encoders
+knob_1L.setMacros(app_index, [12, 13, 14])  
+knob_1R.setMacros(app_index, [15, 16, 17])  
+knob_2L.setMacros(app_index, [18, 19, 20])  
 knob_2R.setMacros(app_index, [21, 22, 23])
 knob_3L.setMacros(app_index, [24, 25, 26])
 knob_3R.setMacros(app_index, [27, 28, 29])  # 1 = lowest row!
 
+# Initialisation Joystick 
 # Create a Joystick object >> Laden Sparkfun Joystick (JS),
 # Standardadresse 0x20, aus der lib, nur ein JS möglich!!
-# joy = Joy(sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus))
-
-# Initialisation Joystick 
 joystick_1R = JoyStick(sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2c_bus), macropad)
 
 # MAIN LOOP ----------------------------
@@ -160,7 +187,7 @@ while True:
 
     # -- cut the lights after 1 second if not enabled
     if not pixels_enabled:
-        if (millis() - last_app_switch_time > 1000) and app_switch_temp_lighting:
+        if (Config.GlobalFunctions.get_millis() - last_app_switch_time > 1000) and app_switch_temp_lighting:
             for i in range(12):
                 macropad.pixels[i] = 0x000000
             knob_1L.pixel.fill(0x000000)
@@ -189,7 +216,7 @@ while True:
         knob_2R.setMacros(app_index, [21, 22, 23])
         knob_3L.setMacros(app_index, [24, 25, 17])  # 1 = lowest row!
         knob_3R.setMacros(app_index, [27, 28, 29])
-        last_app_switch_time = millis()
+        last_app_switch_time = Config.GlobalFunctions.get_millis()
         app_switch_temp_lighting = True
     elif app_knob_position != app_knob_last_position:
         app_index = app_knob_position % len(apps)
@@ -202,7 +229,7 @@ while True:
         knob_3R.setMacros(app_index, [27, 28, 29])
         # macropad.play_file("pop.wav")
         app_knob_last_position = app_knob_position
-        last_app_switch_time = millis()
+        last_app_switch_time = Config.GlobalFunctions.get_millis()
         app_switch_temp_lighting = True
 
     # ------------------------ Macro key events ------------------------
@@ -236,12 +263,6 @@ while True:
                 knob_3R.pixel.fill(0x000000)
                 neokey1.setAllPixels(0x0)
 
-            knob_1L.pixels_enabled = pixels_enabled
-            knob_1R.pixels_enabled = pixels_enabled
-            knob_2L.pixels_enabled = pixels_enabled
-            knob_2R.pixels_enabled = pixels_enabled
-            knob_3L.pixels_enabled = pixels_enabled
-            knob_3R.pixels_enabled = pixels_enabled
             neokey1.pixels_enabled = pixels_enabled
 
             macropad.pixels.show()
@@ -281,10 +302,7 @@ while True:
             else:
                 macropad.keyboard_layout.write(item)
 
-        # macropad.start_tone(Config.MarcoPad.keypress_tones[key_number])
-
     else:
-        # macropad.stop_tone()
 
         for item in sequence:
             if isinstance(item, int) and item >= 0:

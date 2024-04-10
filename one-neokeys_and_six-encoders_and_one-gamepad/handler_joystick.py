@@ -1,79 +1,107 @@
 import math
+import time
 from config import Config
 
 class JoyStick:
+    """
+    Klasse zur Verwaltung eines Joysticks am Macropad.
+    
+    Diese Klasse liest die Position des Joysticks, berechnet Bewegungen,
+    führt entsprechende Aktionen aus und verarbeitet Joystick-Klicks.
+    """
 
-    def __init__(self, joyStick, macroPad):
-        self.joystick = joyStick
+    MAX_VALUE = 1023
+    MOVEMENT_THRESHOLD = 2
+    DEBOUNCE_TIME = 0.1  
+
+    def __init__(self, joystick, macroPad):
+        """Initialisiert eine neue Instanz der JoyStick-Klasse.
+        
+        :param joystick: Das Joystick-Objekt für die Eingabe.
+        :param macroPad: Das Macropad-Objekt für die Aktionen.
+        """
+        self.joystick = joystick
         self.macropad = macroPad
+        self.initialize_joystick()
 
-        # letze Positionen JS auf Null setzen
+    def initialize_joystick(self):
+        """Initialisiert die Joystick-Konfiguration und setzt Startwerte."""
+        #Letze Positionen JS auf Null setzen
         self.last_x = 0
         self.last_y = 0
-        
-        # Bestimmung des Nullpunkts x, y JS, Invertierung prüfen
-        for i in range(3):
-            self.start_x = 1023 - joyStick.horizontal
-            self.start_y = 1023 - joyStick.vertical
-
-        # Mousespeed x/y auf Null setzen
+        #Initialisiert die Startposition des Joysticks.
+        self.start_x = self.MAX_VALUE - self.joystick.horizontal
+        self.start_y = self.MAX_VALUE - self.joystick.vertical
+        #Mousespeed x/y auf Null setzen
         self.mo_xspeed = None
         self.mo_yspeed = None
+        # Initialisiere den Zeitstempel
+        self.last_movement_time = time.monotonic()  
+        #Initialisiere Button
+        self.button_was_pressed = False
 
-    def update(self):
-        # Joystick auslesen - aktuelle Position absolut, Invertierungen prüfen
-        x = 1023 - self.joystick.horizontal
-        y = 1023 - self.joystick.vertical
+    def calculate_relative_position(self, current, start):
+        """
+        Berechnet die relative Position zum Startpunkt unter Berücksichtigung der Invertierung.
+        
+        :param current: Aktuelle Position des Joysticks.
+        :param start: Startposition des Joysticks.
+        :return: Die relative Position.
+        """
+        return self.MAX_VALUE - current - start
 
-        # relative Position x und y bestimmen, aktuell y invertieren, Code für y prüfen
-        x_rel_pos = x - self.start_x
-        y_rel_pos = y - self.start_y
-        y_rel_pos = -y_rel_pos
+    def calculate_movement_speed(self, relative_position):
+        """
+        Berechnet die Geschwindigkeit der Bewegung basierend auf der relativen Position.
+        
+        :param relative_position: Die relative Position des Joysticks.
+        :return: Die berechnete Geschwindigkeit der Bewegung.
+        """
+        if relative_position == 0:
+            return 0
+        sign = 1 if relative_position > 0 else -1
+        relative_position = abs(relative_position)
+        speed = math.ceil((5 * math.log(relative_position)) + (relative_position / 20))
+        return speed * sign
 
-        # Bei Bewegung R Vorzeichen auf 1 setzen und Mousespeed R berechnen
-        # (ln- und lin-Anteil)
-        if x_rel_pos > 0:
-            x_rel_pos_h = 1
-            mo_xspeed_h = math.ceil(((5 * math.log(x_rel_pos)) + (x_rel_pos / 20)))
-            mo_xspeed = mo_xspeed_h * x_rel_pos_h
+    def _update_movement(self):
+        """
+        Verarbeitet die Bewegung des Joysticks und simuliert entsprechende Mausbewegungen.
+        """
+        current_time = time.monotonic()
+        x_rel_pos = self.calculate_relative_position(self.joystick.horizontal, self.start_x)
+        y_rel_pos = self.calculate_relative_position(self.joystick.vertical, self.start_y)
+        y_rel_pos = -y_rel_pos  # Y-Position invertieren
 
-        # Bei Bewegung L Vorzeichen auf -1 setzen und Mousespeed L berechnen
-        # (ln- und lin-Anteil)
-        elif x_rel_pos < 0:
-            x_rel_pos_h = -1
-            # da ln nur mit positiven Zahlen funktioniert, Absoluttwert berechnen
-            x_rel_pos = abs(x_rel_pos)
-            mo_xspeed_h = math.ceil(((5 * math.log(x_rel_pos)) + (x_rel_pos / 20)))
-            mo_xspeed = mo_xspeed_h * x_rel_pos_h  # Wieder in neagtiven Wert umwandeln
+        # Überprüfen, ob genügend Zeit seit der letzten Bewegung vergangen ist UND
+        # die Bewegung groß genug ist
+        if (abs(x_rel_pos - self.last_x) > self.MOVEMENT_THRESHOLD or abs(y_rel_pos - self.last_y) > self.MOVEMENT_THRESHOLD) and (current_time - self.last_movement_time > self.DEBOUNCE_TIME):
+            mo_xspeed = self.calculate_movement_speed(x_rel_pos)
+            mo_yspeed = self.calculate_movement_speed(y_rel_pos)
 
-        else:
-            mo_xspeed = 0  # Keine Bewegung
-
-        if y_rel_pos > 0:  # Bewegung U, Rest siehe Bewegung R
-            y_rel_pos_h = 1
-            mo_yspeed_h = math.ceil(((5 * math.log(y_rel_pos)) + (y_rel_pos / 20)))
-            mo_yspeed = mo_yspeed_h * y_rel_pos_h
-
-        elif y_rel_pos < 0:  # Bewegung D, Rest siehe Bewegung L
-            y_rel_pos_h = -1
-            y_rel_pos = abs(y_rel_pos)
-            mo_yspeed_h = math.ceil(((5 * math.log(y_rel_pos)) + (y_rel_pos / 20)))
-            mo_yspeed = mo_yspeed_h * y_rel_pos_h
-
-        else:
-            mo_yspeed = 0  # Keine Bewegung
-
-        # Bestimmung, ob sich JS bewegt, Test, ob > 2, 3, ... sinnvoll wäre
-        if (abs(x_rel_pos) > 2) or (abs(y_rel_pos) > 2):
-
-            # Position letzte Abfrage festhalten // prüfen, ob weiter gebraucht wird
-            last_x = x
-            last_y = y
-            # Bewegung Maus, durch Code ab Zeile 365 zukünftig abgearbeitet, nur Demo
             self.macropad.mouse.press(self.macropad.Mouse.MIDDLE_BUTTON)
-            self.macropad.mouse.move(x=mo_xspeed)
-            self.macropad.mouse.move(y=(-1*mo_yspeed))
-            # time.sleep(0.1)
-
+            self.macropad.mouse.move(x=mo_xspeed, y=(-1 * mo_yspeed))
+            
+            # Aktualisiere die letzte Bewegungszeit und Position
+            self.last_movement_time = current_time
+            self.last_x = x_rel_pos
+            self.last_y = y_rel_pos
         else:
             self.macropad.mouse.release(self.macropad.Mouse.MIDDLE_BUTTON)
+
+    def _handle_joystick_click(self):
+        """Verarbeitet den Joystick-Klick und führt eine Aktion aus, wenn der Button gedrückt wurde."""
+        button_pressed = self.joystick.button == 0
+
+        if button_pressed and not self.button_was_pressed:
+            # Der Button wurde gerade gedrückt; führe die Aktion aus
+            self.macropad.mouse.click(self.macropad.Mouse.LEFT_BUTTON)
+
+        # Aktualisiere den gespeicherten Zustand für das nächste Update
+        self.button_was_pressed = button_pressed
+
+    def update(self):
+        """Aktualisiert die Position des Joysticks und führt die entsprechende Aktion aus. 
+        Beinhaltet auch die Joystick Klickfunktionalität."""
+        self._update_movement()
+        self._handle_joystick_click()

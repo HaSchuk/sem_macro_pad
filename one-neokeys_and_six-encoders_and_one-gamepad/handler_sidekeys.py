@@ -1,54 +1,89 @@
-from config import Config # Configuration management in a separate file (config.py)
-from adafruit_hid.keycode import Keycode
-
+from config import Config  # Configuration management in a separate file (config.py)
 
 class SideKeys:
+    """Klasse zur Verwaltung der seitlichen Tasten am Macropad.
+    Diese Klasse kümmert sich um die Erkennung von Tastendrücken und -freigaben
+    für seitlich angebrachte Tasten, steuert zugehörige NeoPixel LEDs
+    und führt konfigurierte Tastenbefehle aus.
+    """
+    PIN_MASK = 0b11110000  # Maske, um die relevanten Pins zu isolieren
+    KEY_STATES = [0b00010000, 0b00100000, 0b01000000, 0b10000000]  # Pin-Zustände
 
     def __init__(self, neoKey, macroPad):
+        """Initialisiert eine neue Instanz der SideKeys-Klasse.
+        
+        :param neoKey: Das NeoKey-Objekt für die LED-Steuerung.
+        :param macroPad: Das Macropad-Objekt für die Tastensteuerung.
+        """
         self.neoKey = neoKey
-        self.count_keys = Config.SideKeys.count_keys
-        self.key_commands = [[None, None, Keycode.CONTROL, Keycode.CONTROL], [None, None, Keycode.C, Keycode.V]]
-        self.debounce_states = [False, False, False, False]
-        self.pressed_index = -1
-        self.last_pins = 0b11110000
         self.macropad = macroPad
+        self.count_keys = Config.SideKeys.count_keys
+        self.key_commands = Config.SideKeys.key_commands
+        self.debounce_states = [False] * self.count_keys
+        self.pressed_index = -1
+        self.last_pins = self.PIN_MASK
         self.led_pixel_color = Config.SideKeys.led_pixels_color_default
         self.pixels_enabled = Config.SideKeys.led_pixels_color_enabled
-        self.pressed_color = Config.SideKeys.led_pixels_color_pressed  # Color of all Sidekey if pressed
+        self.pressed_color = Config.SideKeys.led_pixels_color_pressed
 
-        self.setAllPixels(self.led_pixel_color)  # call setAllPixels definition >> acces to Sidecolor list
+        self._set_all_pixels(self.led_pixel_color)
 
-    def setAllPixels(self, color):
-        for i in range(len(color)):
-            self.neoKey.pixels[i] = color[i]
+    def _set_all_pixels(self, color):
+        """Setzt die Farbe aller NeoPixel LEDs.
+        
+        :param color: Die Farbe, die für alle NeoPixel LEDs gesetzt werden soll.
+        """
+        for i, col in enumerate(color):
+            self.neoKey.pixels[i] = col
 
-    def __parsePins(self, pins):
-        return [not pins & 0b00010000, not pins & 0b00100000, not pins & 0b01000000, not pins & 0b10000000]
+    def _parse_pins(self, pins):
+        """Wandelt die gelesenen Pin-Zustände in Tastenzustände um.
+        
+        :param pins: Die gelesenen Pin-Zustände.
+        :return: Eine Liste von Booleschen Werten, die den Zustand jeder Taste repräsentieren.
+        """
+        return [not pins & mask for mask in self.KEY_STATES]
+
+    def _handle_key_press(self, index):
+        """Verarbeitet das Drücken einer Taste.
+        
+        :param index: Der Index der gedrückten Taste.
+        """
+        self.neoKey.pixels[index] = self.pressed_color
+        if self.key_commands[0][index]:
+            for command in self.key_commands:
+                key = command[index]
+                if key:
+                    self.macropad.keyboard.press(key)
+
+    def _handle_key_release(self, index):
+        """Verarbeitet das Loslassen einer Taste.
+        
+        :param index: Der Index der losgelassenen Taste.
+        """
+        self.neoKey.pixels[index] = self.led_pixel_color[index] if self.pixels_enabled else 0x0
+        if self.key_commands[0][index]:
+            for command in self.key_commands:
+                key = command[index]
+                if key:
+                    self.macropad.keyboard.release(key)
 
     def update(self):
-        pins = self.neoKey.digital_read_bulk(0b11110000)
-
+        """Aktualisiert den Status der Seitentasten und verarbeitet Ereignisse."""
+        pins = self.neoKey.digital_read_bulk(self.PIN_MASK)
         if pins == self.last_pins:
             return
 
         self.last_pins = pins
-        keyStates = self.__parsePins(pins)
+        key_states = self._parse_pins(pins)
 
-        for i in range(self.count_keys):
-            if keyStates[i] and not self.debounce_states[i]:
-                self.neoKey.pixels[i] = self.pressed_color
+        for i, state in enumerate(key_states):
+            if state and not self.debounce_states[i]:
+                self._handle_key_press(i)
                 self.debounce_states[i] = True
-                if self.key_commands[0][i]:
-                    for j in range(2):
-                        self.macropad.keyboard.press(self.key_commands[j][i])
                 self.pressed_index = i
-                continue
 
-            elif not keyStates[i] and self.debounce_states[i]:
-                self.neoKey.pixels[i] = self.led_pixel_color[i] if self.pixels_enabled else 0x0
+            elif not state and self.debounce_states[i]:
+                self._handle_key_release(i)
                 self.debounce_states[i] = False
-                if self.key_commands[0][i]:
-                   for j in range(2):
-                        self.macropad.keyboard.release(self.key_commands[j][i])
                 self.pressed_index = -1
-                continue
