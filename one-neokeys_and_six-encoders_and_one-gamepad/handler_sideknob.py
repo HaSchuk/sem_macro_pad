@@ -12,7 +12,6 @@ class SideKnob:
     
     BUTTON_PIN = 24
     NEOPIXEL_PIN = 6
-    LED_OFF_COLOR = 0x000000
     DEBOUNCE_DELAY = 100  # Milliseconds for debounce delay
 
     def __init__(self, seesaw, macroPad, Apps):
@@ -34,11 +33,21 @@ class SideKnob:
         self.encoder = rotaryio.IncrementalEncoder(self.seesaw)
         self.pixel = neopixel.NeoPixel(self.seesaw, SideKnob.NEOPIXEL_PIN, 1)
         self.pixel.brightness = Config.SideKnob.led_pixels_color_brightness
-        self.color = Config.SideKnob.led_pixels_color_default[0]
-        self.pixel.fill(self.color)
+        self.color = Config.SideKnob.led_pixels_color_default
+        self.led_pixels_color_enabled = Config.SideKnob.led_pixels_color_enabled
+        self.led_pixels_color_off = Config.Globals.led_color_off
+        self.led_pixels_color_pressed = Config.SideKnob.led_pixels_color_pressed
+        self.toggle_knob_led(self.color)
         self.button_down = False
         self.last_position = 0
         self.last_change_time = Config.GlobalFunctions.get_millis()
+
+    def toggle_knob_led(self, color):
+        """Schaltet die Led Beleuchtung an oder aus, wenn Sie global deaktiviert ist."""
+        if self.led_pixels_color_enabled:
+            self.pixel.fill(color)
+        else:
+            self.pixel.fill(self.led_pixels_color_off)
 
     def _initialize_macros(self):
         """Initialisiert die Makro-Konfigurationen für den Drehknopf."""
@@ -63,7 +72,7 @@ class SideKnob:
         elif self.reverse_macro:
             self.color = app_macros[macro_indices[1]][0]  # Alternativ die Farbe des Rückwärtsmakros
         # Setze die aktualisierte Farbe
-        self.pixel.fill(self.color)
+        self.toggle_knob_led(self.color)
 
     def _process_encoder_movement(self, position):
         """Verarbeitet die Bewegung des Drehknopfs und führt das zugehörige Makro aus.
@@ -103,9 +112,10 @@ class SideKnob:
     def _process_button_press(self):
         """Verarbeitet den Druck auf den Knopf des Drehknopfs."""
         self.macropad.keyboard.press(*self.button_macro)
-        self.pixel.fill(colorwheel(self.color))
+        self.toggle_knob_led(self.led_pixels_color_pressed)
         time.sleep(0.1)  
         self.macropad.keyboard.release(*self.button_macro)
+
 
     def update(self):
         """Aktualisiert den Status des Drehknopfs und verarbeitet Ereignisse."""
@@ -122,4 +132,4 @@ class SideKnob:
             self.last_change_time = Config.GlobalFunctions.get_millis()
 
         if (Config.GlobalFunctions.get_millis() - self.last_change_time > SideKnob.DEBOUNCE_DELAY):
-            self.pixel.fill(self.color)
+            self.toggle_knob_led(self.color)
