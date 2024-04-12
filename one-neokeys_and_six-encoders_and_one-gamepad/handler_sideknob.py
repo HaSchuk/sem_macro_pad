@@ -41,6 +41,7 @@ class SideKnob:
         self.button_down = False
         self.last_position = 0
         self.last_change_time = Config.GlobalFunctions.get_millis()
+        self.macroindices = None
 
     def toggle_knob_led(self, color):
         """Schaltet die Led Beleuchtung an oder aus, wenn Sie global deaktiviert ist."""
@@ -61,17 +62,20 @@ class SideKnob:
         :param app_index: Index der Anwendung in der Apps-Liste, aus der die Makros geladen werden.
         :param macro_indices: Indizes der spezifischen Makros in der Anwendungsmakro-Liste.
         """
+        # Speichere macro_indices für spätere Verwendung in Variable
+        self.macroindices = macro_indices
         # Stelle sicher, dass die Makro-Indizes innerhalb der Grenzen der Makro-Liste liegen
         app_macros = self.apps[app_index].macros
-        self.forward_macro = app_macros[macro_indices[0]][2] if macro_indices[0] < len(app_macros) else None
-        self.reverse_macro = app_macros[macro_indices[1]][2] if macro_indices[1] < len(app_macros) else None
-        self.button_macro = app_macros[macro_indices[2]][2] if macro_indices[2] < len(app_macros) else None
+        self.forward_macro = app_macros[self.macroindices[0]][2] if self.macroindices[0] < len(app_macros) else None
+        self.reverse_macro = app_macros[self.macroindices[1]][2] if self.macroindices[1] < len(app_macros) else None
+        self.button_macro = app_macros[self.macroindices[2]][2] if self.macroindices[2] < len(app_macros) else None
         # Aktualisiere die LED-Farbe basierend auf dem Makro, wenn vorhanden
         if self.forward_macro:
-            self.color = app_macros[macro_indices[0]][0]  # Verwende die Farbe des Vorwärtsmakros
+            self.color = app_macros[self.macroindices[0]][0]  # Verwende die Farbe des Vorwärtsmakros
         elif self.reverse_macro:
-            self.color = app_macros[macro_indices[1]][0]  # Alternativ die Farbe des Rückwärtsmakros
+            self.color = app_macros[self.macroindices[1]][0]  # Alternativ die Farbe des Rückwärtsmakros
         # Setze die aktualisierte Farbe
+        time.sleep(0.3)  
         self.toggle_knob_led(self.color)
 
     def _process_encoder_movement(self, position):

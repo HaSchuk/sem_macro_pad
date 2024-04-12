@@ -153,20 +153,29 @@ apps[app_index].switch()  # Starte die Haupt-App
 neokey1 = SideKeys(NeoKey1x4(i2c_bus, addr=0x30), macropad) 
 
 # side rotary encoders 
-knob_1L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x36), macropad, apps)
-knob_1R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x37), macropad, apps)
-knob_2L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x38), macropad, apps)
-knob_2R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x39), macropad, apps)
-knob_3L = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x3A), macropad, apps)
-knob_3R = SideKnob(seesaw.Seesaw(i2c_bus, addr=0x3B), macropad, apps) # 1 = lowest row!
+#@staticmethod
+def initialize_sideknobs(sideknobslist, i2cBus, macroPad, AppIndex, Apps):
+    sideknobs = {}
+    for name, address, macroindices in sideknobslist:
+        # Erstelle eine neue SideKnob-Instanz mit der gegebenen I2C-Adresse
+        sideknob = SideKnob(seesaw.Seesaw(i2cBus, addr=address), macroPad, Apps)
+        # Verbinde MacroPosition mit SideKnob
+        sideknob.setMacros(AppIndex, macroindices)
+        # Füge die neue Instanz dem Dictionary hinzu, wobei der Name als Schlüssel dient
+        sideknobs[name] = sideknob
+    return sideknobs
 
-# side rotary encoders - Initialize first Macro
-knob_1L.setMacros(app_index, [12, 13, 14])  
-knob_1R.setMacros(app_index, [15, 16, 17])  
-knob_2L.setMacros(app_index, [18, 19, 20])  
-knob_2R.setMacros(app_index, [21, 22, 23])
-knob_3L.setMacros(app_index, [24, 25, 26])
-knob_3R.setMacros(app_index, [27, 28, 29])  
+sideknobs = initialize_sideknobs(Config.SideKnob.sideknob_list, i2c_bus, macropad, app_index, apps)
+
+def sideknobs_update(initialized_sideknobs):
+    for knob in initialized_sideknobs.values():
+        knob.update()
+    # Aufruf sideknobs_update(sideknobs)
+
+def sideknobs_update_macros(initialized_sideknobs, AppIndex):
+    for knob in initialized_sideknobs.values():
+        knob.setMacros(AppIndex, knob.macroindices)
+    # Aufruf sideknobs_update_macros(sideknobs, app_index)
 
 # Initialisation Joystick 
 # Create a Joystick object >> Laden Sparkfun Joystick (JS),
@@ -184,12 +193,7 @@ while True:
     neokey1.update()
     # ----------- END Neokeys --------------------
     # ----------- SideKnobs --------------------
-    knob_1L.update()  
-    knob_1R.update()
-    knob_2L.update()
-    knob_2R.update()
-    knob_3L.update()
-    knob_3R.update()
+    sideknobs_update(sideknobs)
     # ----------- END SideKnobs --------------------
 
     # -- cut the lights after 1 second if not enabled
@@ -211,24 +215,13 @@ while True:
         apps[app_index].switch()
         if apps[app_index].enter_macro:
             macropad.keyboard.send(*apps[app_index].enter_macro)
-        knob_1L.setMacros(app_index, [12, 13, 14])
-        knob_1R.setMacros(app_index, [15, 16, 17])
-        knob_2L.setMacros(app_index, [18, 19, 20])
-        knob_2R.setMacros(app_index, [21, 22, 23])
-        knob_3L.setMacros(app_index, [24, 25, 17])  # 1 = lowest row!
-        knob_3R.setMacros(app_index, [27, 28, 29])
+        sideknobs_update_macros(sideknobs, app_index)
         last_app_switch_time = Config.GlobalFunctions.get_millis()
         app_switch_temp_lighting = True
     elif app_knob_position != app_knob_last_position:
         app_index = app_knob_position % len(apps)
         apps[app_index].switch()
-        knob_1L.setMacros(app_index, [12, 13, 14])
-        knob_1R.setMacros(app_index, [15, 16, 17])
-        knob_2L.setMacros(app_index, [18, 19, 20])
-        knob_2R.setMacros(app_index, [21, 22, 23])
-        knob_3L.setMacros(app_index, [24, 25, 17])  # 1 = lowest row!
-        knob_3R.setMacros(app_index, [27, 28, 29])
-        # macropad.play_file("pop.wav")
+        sideknobs_update_macros(sideknobs, app_index)
         app_knob_last_position = app_knob_position
         last_app_switch_time = Config.GlobalFunctions.get_millis()
         app_switch_temp_lighting = True
