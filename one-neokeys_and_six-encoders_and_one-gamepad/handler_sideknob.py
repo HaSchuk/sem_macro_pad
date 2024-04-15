@@ -1,6 +1,5 @@
 from config import Config  # Configuration management in a separate file (config.py)
 from adafruit_seesaw import neopixel, rotaryio, digitalio
-from rainbowio import colorwheel
 import time
 
 class SideKnob:
@@ -14,7 +13,7 @@ class SideKnob:
     NEOPIXEL_PIN = 6
     DEBOUNCE_DELAY = 100  # Milliseconds for debounce delay
 
-    def __init__(self, seesaw, macroPad, Apps):
+    def __init__(self, seesaw, macroPad, Apps, macroIndices):
         """Initialisiert eine neue Instanz der SideKnob-Klasse.
         :param seesaw: Das Seesaw-Objekt für I/O-Operationen.
         :param macroPad: Das Macropad-Objekt für die Steuerung.
@@ -23,6 +22,7 @@ class SideKnob:
         self.seesaw = seesaw
         self.macropad = macroPad
         self.apps = Apps
+        self.macroindices = macroIndices
         self._initialize_hardware()
         self._initialize_macros()
 
@@ -36,12 +36,11 @@ class SideKnob:
         self.color = Config.SideKnob.led_pixels_color_default
         self.led_pixels_color_enabled = Config.SideKnob.led_pixels_color_enabled
         self.led_pixels_color_off = Config.Globals.led_color_off
-        self.led_pixels_color_pressed = Config.SideKnob.led_pixels_color_pressed
+        self.led_pixels_color_pressed_default = Config.SideKnob.led_pixels_color_pressed_default
         self.toggle_knob_led(self.color)
         self.button_down = False
         self.last_position = 0
         self.last_change_time = Config.GlobalFunctions.get_millis()
-        self.macroindices = None
 
     def toggle_knob_led(self, color):
         """Schaltet die Led Beleuchtung an oder aus, wenn Sie global deaktiviert ist."""
@@ -56,13 +55,16 @@ class SideKnob:
         self.reverse_macro = []
         self.button_macro = []
     
-    def setMacros(self, app_index, macro_indices=[12, 13, 14]):
+    def setMacros(self, app_index, macro_indices=None):
         """Legt die Makros fest, die bei Drehbewegungen und Knopfdrücken ausgeführt werden sollen.
         
         :param app_index: Index der Anwendung in der Apps-Liste, aus der die Makros geladen werden.
         :param macro_indices: Indizes der spezifischen Makros in der Anwendungsmakro-Liste.
         """
-        # Speichere macro_indices für spätere Verwendung in Variable
+        # Wenn kein macro_indices übergeben nehme default
+        if macro_indices is None:
+            macro_indices = self.macroindices
+        # Speichere macro_indices Falls er geändert werden soll
         self.macroindices = macro_indices
         # Stelle sicher, dass die Makro-Indizes innerhalb der Grenzen der Makro-Liste liegen
         app_macros = self.apps[app_index].macros
@@ -70,12 +72,17 @@ class SideKnob:
         self.reverse_macro = app_macros[self.macroindices[1]][2] if self.macroindices[1] < len(app_macros) else None
         self.button_macro = app_macros[self.macroindices[2]][2] if self.macroindices[2] < len(app_macros) else None
         # Aktualisiere die LED-Farbe basierend auf dem Makro, wenn vorhanden
-        if self.forward_macro:
-            self.color = app_macros[self.macroindices[0]][0]  # Verwende die Farbe des Vorwärtsmakros
-        elif self.reverse_macro:
-            self.color = app_macros[self.macroindices[1]][0]  # Alternativ die Farbe des Rückwärtsmakros
+        self.forward_macro_color = app_macros[self.macroindices[0]][0] if self.forward_macro else None
+        self.reverse_macro_color = app_macros[self.macroindices[1]][0] if self.reverse_macro else None
+        self.button_macro_color = app_macros[self.macroindices[2]][0] if self.button_macro else None
         # Setze die aktualisierte Farbe
-        time.sleep(0.3)  
+        time.sleep(0.05)  
+        self.color = (
+            self.forward_macro_color if self.forward_macro else
+            self.reverse_macro_color if self.reverse_macro else
+            self.button_macro_color if self.button_macro else
+            self.color
+        )
         self.toggle_knob_led(self.color)
 
     def _process_encoder_movement(self, position):
@@ -116,8 +123,11 @@ class SideKnob:
     def _process_button_press(self):
         """Verarbeitet den Druck auf den Knopf des Drehknopfs."""
         self.macropad.keyboard.press(*self.button_macro)
-        self.toggle_knob_led(self.led_pixels_color_pressed)
-        time.sleep(0.1)  
+        self.toggle_knob_led(
+            self.button_macro_color if self.button_macro_color else
+            self.led_pixels_color_pressed_default
+        )
+        time.sleep(0.05)  
         self.macropad.keyboard.release(*self.button_macro)
 
 

@@ -1,20 +1,25 @@
-from adafruit_hid.keycode import Keycode
-import time
+from adafruit_hid.keycode import Keycode # type: ignore
+import os, time
+
 
 #TODO: Switch Encoder Farbe bei Macro Wechsel
-#TODO: Weitere Elemente Dynamisch bauen!
 
 class Config:
     class Globals:
         macro_folder = '/macros'
         led_color_off = 0x000000
+        app_index = 0 # Default setzen, ändert sich zur Laufzeit
+
     class JoyStick:
-        test = None
+        joystick_list = [
+            ("joystick_1R", 0000)  # "Name", "HardwareAdresse" (Aktuell noch nicht benötigt)
+        ]
+
     class SideKeys:
         count_keys = 4 # Anzahl an Keys
         led_pixels_color_default = 0x000580
         led_pixels_color = [0x004000, 0xFF8000, 0x000080, 0x203020]
-        led_pixels_color_pressed = 0xFF2000
+        led_pixels_color_pressed_default = 0xFF2000
         led_pixels_color_enabled = True 
         led_pixels_color_brightness = 0.9 #Maxwert 1.0
         #TODO: Wie key_commands erklären?
@@ -22,10 +27,14 @@ class Config:
             [None, None, Keycode.CONTROL, Keycode.CONTROL],
             [None, None, Keycode.C, Keycode.V]
         ]
+        sidekey_list = [
+            ("neokey1", 0x30, [12, 13, 14])  # "Name", "HardwareAdresse", "MacroIndices" (TODO: Noch nicht eingebaut)
+        ]
+
     class SideKnob:
         count_knobs = 6
         led_pixels_color_default = 0x000580 #Wird aus Macro Datei geladen
-        led_pixels_color_pressed = 0xFF2000
+        led_pixels_color_pressed_default = 0xFF2000
         led_pixels_color_enabled = True
         led_pixels_color_brightness = 0.2 #Maxwert 1.0
         sideknob_list = [
@@ -39,8 +48,14 @@ class Config:
 
     class MacroPad:
         keypress_tones = [196, 220, 246, 262, 294, 330, 349, 392, 440, 494, 523, 587]
+        key_to_app_map = { 1 : 'Lisa.LIMS', 0 : 'Quanta' }
+    
     class GlobalFunctions: 
         @staticmethod
         def get_millis():
             """Gibt die aktuelle Zeit in Millisekunden zurück."""
             return round(time.time() * 1000)
+        
+
+        
+
