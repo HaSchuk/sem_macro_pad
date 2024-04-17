@@ -5,8 +5,8 @@ import time
 
 class SideKnobHandler:
     """
-    Klasse zur Verwaltung eines seitlichen Drehknopfs (Side Knob) am Macropad.
-    Diese Klasse initialisiert den Drehknopf, verarbeitet dessen Bewegungen und Knopfdrücke,
+    Klasse zur Verwaltung eines zusätzlichen Drehenoders (Side Knob) am Macropad.
+    Diese Klasse initialisiert den Drehencoder, verarbeitet dessen Bewegungen und Knopfdrücke,
     und steuert eine zugehörige NeoPixel LED zur Anzeige des Status.
     """
     
