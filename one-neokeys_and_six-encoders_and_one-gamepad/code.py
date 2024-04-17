@@ -1,16 +1,9 @@
 import os, board # type: ignore
 import displayio, terminalio # type: ignore
-import sparkfun_qwiicjoystick
 from adafruit_display_shapes.rect import Rect # type: ignore
 from adafruit_display_text import label
 from adafruit_macropad import MacroPad # type: ignore
-from adafruit_neokey.neokey1x4 import NeoKey1x4
-from adafruit_seesaw import seesaw
 from config import Config # Configuration management in a separate file (config.py)
-from handler_sidekeys import SideKeys
-from handler_sideknob import SideKnob
-from handler_joystick import JoyStick
-#from handler_macropad import MacroPad
 
 # CLASSES AND FUNCTIONS ----------------
 class App:
@@ -42,18 +35,9 @@ class App:
         macropad.display.refresh()
 
 class Main:
-    _instance = None
-
     def __init__(self):
         self._initialize_hardware()
         self.run()
-
-    @classmethod
-    def get_instance(cls):
-        """Statische Methode, um die Instanz zu erhalten oder zu erstellen."""
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
 
     def _initialize_hardware(self):
         # Initialize i2c Board
@@ -66,8 +50,8 @@ class Main:
         self._initialize_display()
         # Load macros from macros folder
         self._load_macros()
-        # Initialize Controll Interfaces
-        self._initialize_control_interfaces(self.i2c_bus, self.macropad, Config.Globals.app_index, self.apps)
+        # Initialize Controll Interfaces 
+        self._initialize_control_interfaces()
         # Switch to default App
         self.apps[Config.Globals.app_index].switch(self.macropad, self.display_group)
 
@@ -114,6 +98,7 @@ class Main:
             SyntaxError, ImportError, AttributeError, KeyError, NameError, IndexError, TypeError:
                 Fängt und protokolliert Ausnahmen, die beim Laden der Makrodateien auftreten.
         """
+        self.app = None
         self.apps = []
         self.app_map = {}
         files = os.listdir(Config.Globals.macro_folder)
@@ -123,9 +108,9 @@ class Main:
             if filename.endswith('.py') and not filename.startswith('._'):
                 try:
                     module = __import__(Config.Globals.macro_folder + '/' + filename[:-3])
-                    app = App(module.app)
-                    self.apps.append(app)
-                    self.app_map[app.name] = idx
+                    self.app = App(module.app)
+                    self.apps.append(self.app)
+                    self.app_map[self.app.name] = idx
                     idx += 1
                 except (SyntaxError, ImportError, AttributeError, KeyError, NameError,
                         IndexError, TypeError) as err:
@@ -139,26 +124,29 @@ class Main:
             while True:
                 pass
         
-    def _initialize_control_interfaces(self, i2cBus, MacroPad, AppIndex, Apps):
+    def _initialize_control_interfaces(self):
+        # Import Handlers
+        from handler_sidekeys import SideKeysHandler
+        from handler_sideknob import SideKnobHandler
+        from handler_joystick import JoyStickHandler
+        #from handler_macropad import MacroPad
         self.sideknobs, self.sidekeys, self.joysticks  = {}, {}, {}
         
         for name, address, macroindices in Config.SideKnob.sideknob_list:
             # Erstelle eine neue SideKnob-Instanz mit der gegebenen I2C-Adresse
-            sideknob = SideKnob(seesaw.Seesaw(i2cBus, addr=address), MacroPad, Apps, macroindices)
-            # Verbinde MacroPosition mit SideKnob
-            sideknob.setMacros(AppIndex)
+            sideknob = SideKnobHandler(self, address, macroindices)
             # Füge die neue Instanz dem Dictionary hinzu, wobei der Name als Schlüssel dient
             self.sideknobs[name] = sideknob
         
         for name, address, macroindices in Config.SideKeys.sidekey_list:
             # Erstelle eine neue Sidekey-Instanz mit der gegebenen I2C-Adresse
-            sidekey = SideKeys(NeoKey1x4(i2cBus, addr=address), MacroPad, Apps)
+            sidekey = SideKeysHandler(self, address, macroindices)
             # Füge die neue Instanz dem Dictionary hinzu, wobei der Name als Schlüssel dient
             self.sidekeys[name] = sidekey
         
         for name, address in Config.JoyStick.joystick_list:
             # Erstelle eine neue Joystick-Instanz mit der gegebenen I2C-Adresse
-            joystick = JoyStick(sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(i2cBus), MacroPad)
+            joystick = JoyStickHandler(self, address)
             # Füge die neue Instanz dem Dictionary hinzu, wobei der Name als Schlüssel dient
             self.joysticks[name] = joystick
 
@@ -204,18 +192,6 @@ class Main:
 
             # -- app switch check (from encoder or sidekeys).
             app_knob_position = self.macropad.encoder
-
-            #TODO: Implementieren in Handler Klasse
-            for key in self.sidekeys.values():
-                if key.pressed_index == 0 or key.pressed_index == 1:
-                    app_name = Config.MacroPad.key_to_app_map[key.pressed_index]
-                    if self.apps[Config.Globals.app_index].exit_macro:
-                        self.macropad.keyboard.send(*self.apps[Config.Globals.app_index].exit_macro)
-                    Config.Globals.app_index = self.app_map[app_name]
-                    self.apps[Config.Globals.app_index].switch(self.macropad, self.display_group)
-                    if self.apps[Config.Globals.app_index].enter_macro:
-                        self.macropad.keyboard.send(*self.apps[Config.Globals.app_index].enter_macro)
-                    self._control_interfaces_update_macros(Config.Globals.app_index, self.sideknobs, self.sidekeys)
 
             if app_knob_position != app_knob_last_position:
                 Config.Globals.app_index = app_knob_position % len(self.apps)
@@ -294,5 +270,4 @@ class Main:
                 self.macropad.pixels.show()
 
 if __name__ == '__main__':
-    main = Main.get_instance()
-
+    main = Main()

@@ -3,6 +3,7 @@ import os, time
 
 
 #TODO: Switch Encoder Farbe bei Macro Wechsel
+#TODO: SideKeys TODOS
 
 class Config:
     class Globals:
@@ -22,7 +23,7 @@ class Config:
         led_pixels_color_pressed_default = 0xFF2000
         led_pixels_color_enabled = True 
         led_pixels_color_brightness = 0.9 #Maxwert 1.0
-        #TODO: Wie key_commands erklären?
+        #TODO: In Macrofile auslagern
         key_commands = [
             [None, None, Keycode.CONTROL, Keycode.CONTROL],
             [None, None, Keycode.C, Keycode.V]
@@ -32,7 +33,6 @@ class Config:
         ]
 
     class SideKnob:
-        count_knobs = 6
         led_pixels_color_default = 0x000580 #Wird aus Macro Datei geladen
         led_pixels_color_pressed_default = 0xFF2000
         led_pixels_color_enabled = True

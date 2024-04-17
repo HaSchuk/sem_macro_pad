@@ -1,8 +1,9 @@
 from config import Config  # Configuration management in a separate file (config.py)
 from adafruit_seesaw import neopixel, rotaryio, digitalio
+from adafruit_seesaw import seesaw
 import time
 
-class SideKnob:
+class SideKnobHandler:
     """
     Klasse zur Verwaltung eines seitlichen Drehknopfs (Side Knob) am Macropad.
     Diese Klasse initialisiert den Drehknopf, verarbeitet dessen Bewegungen und Knopfdrücke,
@@ -13,25 +14,25 @@ class SideKnob:
     NEOPIXEL_PIN = 6
     DEBOUNCE_DELAY = 100  # Milliseconds for debounce delay
 
-    def __init__(self, seesaw, macroPad, Apps, macroIndices):
+    def __init__(self, main_instance, hw_address, macroIndices):
         """Initialisiert eine neue Instanz der SideKnob-Klasse.
         :param seesaw: Das Seesaw-Objekt für I/O-Operationen.
         :param macroPad: Das Macropad-Objekt für die Steuerung.
         :param Apps: Eine Liste von Anwendungen mit Makros.
         """
-        self.seesaw = seesaw
-        self.macropad = macroPad
-        self.apps = Apps
+        self.main = main_instance
+        self.seesaw = seesaw.Seesaw(self.main.i2c_bus, addr=hw_address)
         self.macroindices = macroIndices
         self._initialize_hardware()
         self._initialize_macros()
+        self.setMacros(Config.Globals.app_index, self.macroindices)
 
     def _initialize_hardware(self):
         """Initialisiert die Hardware-Komponenten des Drehknopfs."""
-        self.seesaw.pin_mode(SideKnob.BUTTON_PIN, self.seesaw.INPUT_PULLUP)
-        self.button = digitalio.DigitalIO(self.seesaw, SideKnob.BUTTON_PIN)
+        self.seesaw.pin_mode(self.BUTTON_PIN, self.seesaw.INPUT_PULLUP)
+        self.button = digitalio.DigitalIO(self.seesaw, self.BUTTON_PIN)
         self.encoder = rotaryio.IncrementalEncoder(self.seesaw)
-        self.pixel = neopixel.NeoPixel(self.seesaw, SideKnob.NEOPIXEL_PIN, 1)
+        self.pixel = neopixel.NeoPixel(self.seesaw, self.NEOPIXEL_PIN, 1)
         self.pixel.brightness = Config.SideKnob.led_pixels_color_brightness
         self.color = Config.SideKnob.led_pixels_color_default
         self.led_pixels_color_enabled = Config.SideKnob.led_pixels_color_enabled
@@ -67,7 +68,7 @@ class SideKnob:
         # Speichere macro_indices Falls er geändert werden soll
         self.macroindices = macro_indices
         # Stelle sicher, dass die Makro-Indizes innerhalb der Grenzen der Makro-Liste liegen
-        app_macros = self.apps[app_index].macros
+        app_macros = self.main.apps[app_index].macros
         self.forward_macro = app_macros[self.macroindices[0]][2] if self.macroindices[0] < len(app_macros) else None
         self.reverse_macro = app_macros[self.macroindices[1]][2] if self.macroindices[1] < len(app_macros) else None
         self.button_macro = app_macros[self.macroindices[2]][2] if self.macroindices[2] < len(app_macros) else None
@@ -94,7 +95,7 @@ class SideKnob:
         if len(macro_to_process) == 2:
             self._execute_macro(macro_to_process)
         else:
-            self.macropad.keyboard.send(*macro_to_process)
+            self.main.macropad.keyboard.send(*macro_to_process)
         self.last_position = position
 
     def _execute_macro(self, macro):
@@ -105,30 +106,30 @@ class SideKnob:
         for action in macro:
             if action == 'Wheel up':
                 # Führe eine Scroll-Aktion nach oben aus
-                self.macropad.mouse.move(wheel=1)
+                self.main.macropad.mouse.move(wheel=1)
             elif action == 'Wheel down':
                 # Führe eine Scroll-Aktion nach unten aus
-                self.macropad.mouse.move(wheel=-1)
+                self.main.macropad.mouse.move(wheel=-1)
             elif action == 'Mouse right':
                 # Bewege die Maus nach rechts
-                self.macropad.mouse.move(x=10)
+                self.main.macropad.mouse.move(x=10)
             elif action == 'Mouse left':
                 # Bewege die Maus nach links
-                self.macropad.mouse.move(x=-10)
+                self.main.macropad.mouse.move(x=-10)
             else:
                 # Standard-Verarbeitung für Tastendrücke
-                self.macropad.keyboard.press(action)
-                self.macropad.keyboard.release_all()
+                self.main.macropad.keyboard.press(action)
+                self.main.macropad.keyboard.release_all()
 
     def _process_button_press(self):
         """Verarbeitet den Druck auf den Knopf des Drehknopfs."""
-        self.macropad.keyboard.press(*self.button_macro)
+        self.main.macropad.keyboard.press(*self.button_macro)
         self.toggle_knob_led(
             self.button_macro_color if self.button_macro_color else
             self.led_pixels_color_pressed_default
         )
         time.sleep(0.05)  
-        self.macropad.keyboard.release(*self.button_macro)
+        self.main.macropad.keyboard.release(*self.button_macro)
 
 
     def update(self):
@@ -145,5 +146,5 @@ class SideKnob:
             self.button_down = False
             self.last_change_time = Config.GlobalFunctions.get_millis()
 
-        if (Config.GlobalFunctions.get_millis() - self.last_change_time > SideKnob.DEBOUNCE_DELAY):
+        if (Config.GlobalFunctions.get_millis() - self.last_change_time > self.DEBOUNCE_DELAY):
             self.toggle_knob_led(self.color)

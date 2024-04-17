@@ -1,7 +1,8 @@
 from config import Config  # Configuration management in a separate file (config.py)
+from adafruit_neokey.neokey1x4 import NeoKey1x4
 import time
 
-class SideKeys:
+class SideKeysHandler:
     """Klasse zur Verwaltung der seitlichen Tasten am Macropad.
     Diese Klasse kümmert sich um die Erkennung von Tastendrücken und -freigaben
     für seitlich angebrachte Tasten, steuert zugehörige NeoPixel LEDs
@@ -10,15 +11,15 @@ class SideKeys:
     PIN_MASK = 0b11110000  # Maske, um die relevanten Pins zu isolieren
     KEY_STATES = [0b00010000, 0b00100000, 0b01000000, 0b10000000]  # Pin-Zustände
 
-    def __init__(self, neoKey, macroPad, Apps):
+    def __init__(self, main_instance, hw_address, macroIndices):
         """Initialisiert eine neue Instanz der SideKeys-Klasse.
         
         :param neoKey: Das NeoKey-Objekt für die LED-Steuerung.
         :param macroPad: Das Macropad-Objekt für die Tastensteuerung.
         """
-        self.neoKey = neoKey
-        self.macropad = macroPad
-        self.apps = Apps
+        self.main = main_instance
+        self.macroindices = macroIndices
+        self.neoKey = NeoKey1x4(self.main.i2c_bus, addr=hw_address)
         self.count_keys = Config.SideKeys.count_keys
         self.key_commands = Config.SideKeys.key_commands
         self.debounce_states = [False] * self.count_keys
@@ -65,7 +66,7 @@ class SideKeys:
             for command in self.key_commands:
                 key = command[index]
                 if key:
-                    self.macropad.keyboard.press(key)
+                    self.main.macropad.keyboard.press(key)
 
     def _handle_key_release(self, index):
         """Verarbeitet das Loslassen einer Taste.
@@ -80,7 +81,7 @@ class SideKeys:
             for command in self.key_commands:
                 key = command[index]
                 if key:
-                    self.macropad.keyboard.release(key)
+                    self.main.macropad.keyboard.release(key)
 
     def update(self):
         """Aktualisiert den Status der Seitentasten und verarbeitet Ereignisse."""
@@ -101,3 +102,14 @@ class SideKeys:
                 self._handle_key_release(i)
                 self.debounce_states[i] = False
                 self.pressed_index = -1
+
+        #TODO: Mit Macros Verbinden!
+        if self.pressed_index == 0 or self.pressed_index == 1:
+            self.main.app_name = Config.MacroPad.key_to_app_map[self.pressed_index]
+            if self.main.apps[Config.Globals.app_index].exit_macro:
+                self.main.macropad.keyboard.send(*self.main.apps[Config.Globals.app_index].exit_macro)
+            Config.Globals.app_index = self.main.app_map[self.main.app_name]
+            self.main.apps[Config.Globals.app_index].switch(self.main.macropad, self.main.display_group)
+            if self.main.apps[Config.Globals.app_index].enter_macro:
+                self.main.macropad.keyboard.send(*self.main.apps[Config.Globals.app_index].enter_macro)
+            self.main._control_interfaces_update_macros(Config.Globals.app_index, self.main.sideknobs, self.main.sidekeys)

@@ -1,8 +1,8 @@
-import math
-import time
+import math, time
+import sparkfun_qwiicjoystick
 from config import Config
 
-class JoyStick:
+class JoyStickHandler:
     """
     Klasse zur Verwaltung eines Joysticks am Macropad.
     
@@ -14,14 +14,15 @@ class JoyStick:
     MOVEMENT_THRESHOLD = 2
     DEBOUNCE_TIME = 0.1  
 
-    def __init__(self, joystick, macroPad):
+    def __init__(self, main_instance, hw_address):
         """Initialisiert eine neue Instanz der JoyStick-Klasse.
         
         :param joystick: Das Joystick-Objekt für die Eingabe.
         :param macroPad: Das Macropad-Objekt für die Aktionen.
         """
-        self.joystick = joystick
-        self.macropad = macroPad
+        self.main = main_instance
+        self.address = hw_address
+        self.joystick = sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(self.main.i2c_bus)
         self.initialize_joystick()
 
     def initialize_joystick(self):
@@ -79,15 +80,15 @@ class JoyStick:
             mo_xspeed = self.calculate_movement_speed(x_rel_pos)
             mo_yspeed = self.calculate_movement_speed(y_rel_pos)
 
-            self.macropad.mouse.press(self.macropad.Mouse.MIDDLE_BUTTON)
-            self.macropad.mouse.move(x=mo_xspeed, y=(-1 * mo_yspeed))
+            self.main.macropad.mouse.press(self.main.macropad.Mouse.MIDDLE_BUTTON)
+            self.main.macropad.mouse.move(x=mo_xspeed, y=(-1 * mo_yspeed))
             
             # Aktualisiere die letzte Bewegungszeit und Position
             self.last_movement_time = current_time
             self.last_x = x_rel_pos
             self.last_y = y_rel_pos
         else:
-            self.macropad.mouse.release(self.macropad.Mouse.MIDDLE_BUTTON)
+            self.main.macropad.mouse.release(self.main.macropad.Mouse.MIDDLE_BUTTON)
 
     def _handle_joystick_click(self):
         """Verarbeitet den Joystick-Klick und führt eine Aktion aus, wenn der Button gedrückt wurde."""
@@ -95,7 +96,7 @@ class JoyStick:
 
         if button_pressed and not self.button_was_pressed:
             # Der Button wurde gerade gedrückt; führe die Aktion aus
-            self.macropad.mouse.click(self.macropad.Mouse.LEFT_BUTTON)
+            self.main.macropad.mouse.click(self.main.macropad.Mouse.LEFT_BUTTON)
 
         # Aktualisiere den gespeicherten Zustand für das nächste Update
         self.button_was_pressed = button_pressed
