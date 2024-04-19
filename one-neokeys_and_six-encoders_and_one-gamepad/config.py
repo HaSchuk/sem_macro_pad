@@ -1,6 +1,5 @@
 from adafruit_hid.keycode import Keycode # type: ignore
-import os, time
-
+import time
 
 #TODO: Switch Encoder Farbe bei Macro Wechsel
 #TODO: SideKeys TODOS
@@ -13,7 +12,7 @@ class Config:
 
     class JoyStick:
         joystick_list = [
-            ("joystick_1R", 0000)  # "Name", "HardwareAdresse" (Aktuell noch nicht benötigt)
+            ("joystick_1R", 0x20)  # "Name", "HardwareAdresse" (Aktuell noch nicht benötigt)
         ]
 
     class SideKeys:
@@ -47,8 +46,13 @@ class Config:
         ]
 
     class MacroPad:
+        count_keys = 12 # Anzahl an Keys
         keypress_tones = [196, 220, 246, 262, 294, 330, 349, 392, 440, 494, 523, 587]
         key_to_app_map = { 1 : 'Lisa.LIMS', 0 : 'Quanta' }
+        led_pixels_color_default = 0x000580 #Wird aus Macro Datei geladen
+        led_pixels_color_pressed_default = 0xFF2000
+        led_pixels_color_enabled = True
+        led_pixels_color_brightness = 0.9 #Maxwert 1.0
     
     class GlobalFunctions: 
         @staticmethod

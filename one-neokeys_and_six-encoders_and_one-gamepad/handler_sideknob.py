@@ -131,7 +131,6 @@ class SideKnobHandler:
         time.sleep(0.05)  
         self.main.macropad.keyboard.release(*self.button_macro)
 
-
     def update(self):
         """Aktualisiert den Status des Drehknopfs und verarbeitet Ereignisse."""
         current_position = -self.encoder.position

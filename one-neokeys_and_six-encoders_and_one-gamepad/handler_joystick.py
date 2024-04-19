@@ -22,7 +22,7 @@ class JoyStickHandler:
         """
         self.main = main_instance
         self.address = hw_address
-        self.joystick = sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(self.main.i2c_bus)
+        self.joystick = sparkfun_qwiicjoystick.Sparkfun_QwiicJoystick(self.main.i2c_bus, hw_address)
         self.initialize_joystick()
 
     def initialize_joystick(self):

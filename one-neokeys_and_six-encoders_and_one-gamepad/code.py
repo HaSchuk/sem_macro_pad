@@ -2,7 +2,6 @@ import os, board # type: ignore
 import displayio, terminalio # type: ignore
 from adafruit_display_shapes.rect import Rect # type: ignore
 from adafruit_display_text import label
-from adafruit_macropad import MacroPad # type: ignore
 from config import Config # Configuration management in a separate file (config.py)
 
 # CLASSES AND FUNCTIONS ----------------
@@ -21,7 +20,7 @@ class App:
             colors. """
         display_group[13].text = self.name   # Application name
 
-        for i in range(12):
+        for i in range(Config.MacroPad.count_keys):
             if i < len(self.macros):  # Key in use, set label + LED color
                 macropad.pixels[i] = self.macros[i][0]
                 display_group[i].text = self.macros[i][1]
@@ -43,9 +42,7 @@ class Main:
         # Initialize i2c Board
         self.i2c_bus = board.I2C()
         # Initialize MacroPad incl. settings
-        self.macropad = MacroPad()
-        self.macropad.display.auto_refresh = False
-        self.macropad.pixels.auto_write = False
+        self._initialize_macropad()
         # Initialize Display
         self._initialize_display()
         # Load macros from macros folder
@@ -70,19 +67,19 @@ class Main:
         self.display_group = displayio.Group()  # Erstelle eine neue Gruppe für die Displayelemente
 
         # Erstelle Labels für die 12 Tasten des Macropads
-        for key_index in range(12):
+        for key_index in range(Config.MacroPad.count_keys):
             x = key_index % 3  # Position in der Reihe (0, 1, 2)
             y = key_index // 3  # Position in der Spalte (0, 1, 2, 3)
             # Berechne die verankerte Position jedes Labels
             anchored_position = ((self.macropad.display.width - 1) * x / 2,
-                                self.macropad.display.height - 1 - (3 - y) * 12)
+                                self.macropad.display.height - 1 - (3 - y) * Config.MacroPad.count_keys)
             # Füge jedes Label zur Gruppe hinzu
             self.display_group.append(label.Label(FONT, text='', color=BACKGROUND_COLOR,
                                             anchored_position=anchored_position,
                                             anchor_point=(x / 2, 1.0)))
 
         # Füge ein Rechteck als Kopfzeile am oberen Rand des Displays hinzu
-        self.display_group.append(Rect(0, 0, self.macropad.display.width, 12, fill=BACKGROUND_COLOR))
+        self.display_group.append(Rect(0, 0, self.macropad.display.width, Config.MacroPad.count_keys, fill=BACKGROUND_COLOR))
         # Füge ein zentrales Label in der Kopfzeile hinzu
         self.display_group.append(label.Label(FONT, text='', color=TEXT_COLOR,
                                         anchored_position=(self.macropad.display.width//2, -2),
@@ -123,7 +120,13 @@ class Main:
             self.macropad.display.refresh()
             while True:
                 pass
-        
+    
+    def _initialize_macropad(self):
+        # Import Handler
+        from handler_macropad import MacroPadHandler
+        # Initialize MacroPadHandler
+        self.macropad = MacroPadHandler(self)
+
     def _initialize_control_interfaces(self):
         # Import Handlers
         from handler_sidekeys import SideKeysHandler
@@ -181,93 +184,11 @@ class Main:
                 interface.setMacros(AppIndex)
 
     def run(self):
-        pixels_enabled = True 
-        last_pixels_enabled_state = True 
-        app_knob_last_position = None
-        app_knob_position = 0
         while True:
             # ----------- Controller Interfaces --------------------
             self._control_interfaces_update(self.sideknobs, self.sidekeys, self.joysticks)
+            self.macropad.update()
             # ----------- END Controller Interfaces --------------------
-
-            # -- app switch check (from encoder or sidekeys).
-            app_knob_position = self.macropad.encoder
-
-            if app_knob_position != app_knob_last_position:
-                Config.Globals.app_index = app_knob_position % len(self.apps)
-                self.apps[Config.Globals.app_index].switch(self.macropad, self.display_group)
-                self._control_interfaces_update_macros(Config.Globals.app_index, self.sideknobs, self.sidekeys)
-                app_knob_last_position = app_knob_position
-
-            # ------------------------ Macro key events ------------------------
-            # -- Handle encoder button - switch LEDs off/on.
-            self.macropad.encoder_switch_debounced.update()
-            encoder_switch = self.macropad.encoder_switch_debounced.pressed
-            if encoder_switch:
-                pixels_enabled = not pixels_enabled
-
-                if pixels_enabled != last_pixels_enabled_state:
-                    last_pixels_enabled_state = pixels_enabled
-
-                    if pixels_enabled:
-                        for i in range(12):
-                            self.macropad.pixels[i] = self.apps[Config.Globals.app_index].macros[i][0]
-                    else:
-                        for i in range(12):
-                            self.macropad.pixels[i] = 0x000000
-
-                    self.macropad.pixels.show()
-                    continue
-
-            event = self.macropad.keys.events.get()
-            if not event or event.key_number >= len(self.apps[Config.Globals.app_index].macros):
-                continue  # No key events, or no corresponding macro, resume loop
-            key_number = event.key_number
-            pressed = event.pressed
-
-            # If code reaches here, a key or the encoder button WAS pressed/released
-            # and there IS a corresponding macro available for it...other situations
-            # are avoided by 'continue' statements above which resume the loop.
-
-            sequence = self.apps[Config.Globals.app_index].macros[key_number][2]
-            if pressed:
-
-                self.macropad.pixels[key_number] = 0xFF2000
-                self.macropad.pixels.show()
-
-                for item in sequence:
-                    if isinstance(item, int):
-                        if item >= 0:
-                            self.macropad.keyboard.press(item)
-                        else:
-                            self.macropad.keyboard.release(-item)
-                    elif isinstance(item, dict):
-                        if 'buttons' in item:
-                            if item['buttons'] >= 0:
-                                self.macropad.mouse.press(item['buttons'])
-                            else:
-                                self.macropad.mouse.release(-item['buttons'])
-                        self.macropad.mouse.move(item['x'] if 'x' in item else 0,
-                                            item['y'] if 'y' in item else 0,
-                                            item['wheel'] if 'wheel' in item else 0)
-                    else:
-                        self.macropad.keyboard_layout.write(item)
-
-            else:
-
-                for item in sequence:
-                    if isinstance(item, int) and item >= 0:
-                        self.macropad.keyboard.release(item)
-                    elif isinstance(item, dict):
-                        if 'buttons' in item:
-                            if item['buttons'] >= 0:
-                                self.macropad.mouse.release(item['buttons'])
-                if pixels_enabled:
-                    self.macropad.pixels[key_number] = self.apps[Config.Globals.app_index].macros[key_number][0]
-                else:
-                    self.macropad.pixels[key_number] = 0x000000
-
-                self.macropad.pixels.show()
 
 if __name__ == '__main__':
     main = Main()

@@ -20,6 +20,11 @@ class SideKeysHandler:
         self.main = main_instance
         self.macroindices = macroIndices
         self.neoKey = NeoKey1x4(self.main.i2c_bus, addr=hw_address)
+        self._initialize_settings()
+        self._set_all_pixels(self.led_pixel_color)
+
+    def _initialize_settings(self):
+        """Initialisiert die Einstellungen des SideKeys."""
         self.count_keys = Config.SideKeys.count_keys
         self.key_commands = Config.SideKeys.key_commands
         self.debounce_states = [False] * self.count_keys
@@ -32,7 +37,6 @@ class SideKeysHandler:
         self.led_pixels_color_off = Config.Globals.led_color_off
         self.pressed_color = Config.SideKeys.led_pixels_color_pressed_default
 
-        self._set_all_pixels(self.led_pixel_color)
 
     def _set_all_pixels(self, color):
         """Setzt die Farbe aller NeoPixel LEDs.
