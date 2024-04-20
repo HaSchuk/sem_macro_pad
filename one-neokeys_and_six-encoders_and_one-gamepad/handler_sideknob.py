@@ -5,8 +5,8 @@ import time
 
 class SideKnobHandler:
     """
-    Klasse zur Verwaltung eines zusätzlichen Drehenoders (Side Knob) am Macropad.
-    Diese Klasse initialisiert den Drehencoder, verarbeitet dessen Bewegungen und Knopfdrücke,
+    Klasse zur Verwaltung eines seitlichen Drehknopfs (Side Knob) am Macropad.
+    Diese Klasse initialisiert den Drehknopf, verarbeitet dessen Bewegungen und Knopfdrücke,
     und steuert eine zugehörige NeoPixel LED zur Anzeige des Status.
     """
     
@@ -35,6 +35,7 @@ class SideKnobHandler:
         self.pixel = neopixel.NeoPixel(self.seesaw, self.NEOPIXEL_PIN, 1)
         self.pixel.brightness = Config.SideKnob.led_pixels_color_brightness
         self.color = Config.SideKnob.led_pixels_color_default
+        self.led_pixels_color_default = Config.SideKnob.led_pixels_color_default
         self.led_pixels_color_enabled = Config.SideKnob.led_pixels_color_enabled
         self.led_pixels_color_off = Config.Globals.led_color_off
         self.led_pixels_color_pressed_default = Config.SideKnob.led_pixels_color_pressed_default
@@ -57,34 +58,45 @@ class SideKnobHandler:
         self.button_macro = []
     
     def setMacros(self, app_index, macro_indices=None):
-        """Legt die Makros fest, die bei Drehbewegungen und Knopfdrücken ausgeführt werden sollen.
-        
-        :param app_index: Index der Anwendung in der Apps-Liste, aus der die Makros geladen werden.
-        :param macro_indices: Indizes der spezifischen Makros in der Anwendungsmakro-Liste.
-        """
-        # Wenn kein macro_indices übergeben nehme default
         if macro_indices is None:
             macro_indices = self.macroindices
-        # Speichere macro_indices Falls er geändert werden soll
         self.macroindices = macro_indices
-        # Stelle sicher, dass die Makro-Indizes innerhalb der Grenzen der Makro-Liste liegen
         app_macros = self.main.apps[app_index].macros
-        self.forward_macro = app_macros[self.macroindices[0]][2] if self.macroindices[0] < len(app_macros) else None
-        self.reverse_macro = app_macros[self.macroindices[1]][2] if self.macroindices[1] < len(app_macros) else None
-        self.button_macro = app_macros[self.macroindices[2]][2] if self.macroindices[2] < len(app_macros) else None
-        # Aktualisiere die LED-Farbe basierend auf dem Makro, wenn vorhanden
-        self.forward_macro_color = app_macros[self.macroindices[0]][0] if self.forward_macro else None
-        self.reverse_macro_color = app_macros[self.macroindices[1]][0] if self.reverse_macro else None
-        self.button_macro_color = app_macros[self.macroindices[2]][0] if self.button_macro else None
-        # Setze die aktualisierte Farbe
-        time.sleep(0.05)  
-        self.color = (
-            self.forward_macro_color if self.forward_macro else
-            self.reverse_macro_color if self.reverse_macro else
-            self.button_macro_color if self.button_macro else
-            self.color
-        )
+
+        # Funktion zum Extrahieren der Farbe, behandelt explizit `None` als fehlende Farbe
+        def extract_color(macro_entry):
+            return macro_entry[0] if macro_entry and macro_entry[0] is not None else self.led_pixels_color_default
+
+        if len(app_macros) > self.macroindices[0]:
+            self.forward_macro = app_macros[self.macroindices[0]][2]
+            self.forward_macro_color = extract_color(app_macros[self.macroindices[0]])
+        else:
+            self.forward_macro = None
+            self.forward_macro_color = self.led_pixels_color_default
+
+        if len(app_macros) > self.macroindices[1]:
+            self.reverse_macro = app_macros[self.macroindices[1]][2]
+            self.reverse_macro_color = extract_color(app_macros[self.macroindices[1]])
+        else:
+            self.reverse_macro = None
+            self.reverse_macro_color = self.led_pixels_color_default
+
+        if len(app_macros) > self.macroindices[2]:
+            self.button_macro = app_macros[self.macroindices[2]][2]
+            self.button_macro_color = extract_color(app_macros[self.macroindices[2]])
+        else:
+            self.button_macro = None
+            self.button_macro_color = self.led_pixels_color_pressed_default
+
+        # Verwende die erste gültige Farbe oder fallback zum Default, wenn alle `None` sind
+        self.color = (self.forward_macro_color if self.forward_macro_color is not None else
+                    self.reverse_macro_color if self.reverse_macro_color is not None else
+                    self.button_macro_color if self.button_macro_color is not None else
+                    self.led_pixels_color_default)
+
+        time.sleep(0.05)
         self.toggle_knob_led(self.color)
+
 
     def _process_encoder_movement(self, position):
         """Verarbeitet die Bewegung des Drehknopfs und führt das zugehörige Makro aus.
@@ -128,7 +140,7 @@ class SideKnobHandler:
             self.button_macro_color if self.button_macro_color else
             self.led_pixels_color_pressed_default
         )
-        time.sleep(0.05)  
+        time.sleep(0.03)  
         self.main.macropad.keyboard.release(*self.button_macro)
 
     def update(self):

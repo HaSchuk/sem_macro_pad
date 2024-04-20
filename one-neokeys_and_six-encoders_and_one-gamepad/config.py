@@ -1,7 +1,6 @@
 from adafruit_hid.keycode import Keycode # type: ignore
 import time
 
-#TODO: Switch Encoder Farbe bei Macro Wechsel
 #TODO: SideKeys TODOS
 
 class Config:

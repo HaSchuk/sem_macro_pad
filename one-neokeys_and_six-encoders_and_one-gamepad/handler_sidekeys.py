@@ -3,7 +3,7 @@ from adafruit_neokey.neokey1x4 import NeoKey1x4
 import time
 
 class SideKeysHandler:
-    """Klasse zur Verwaltung eines NeoKey1#x4 am Macropad.
+    """Klasse zur Verwaltung der seitlichen Tasten am Macropad.
     Diese Klasse kümmert sich um die Erkennung von Tastendrücken und -freigaben
     für seitlich angebrachte Tasten, steuert zugehörige NeoPixel LEDs
     und führt konfigurierte Tastenbefehle aus.
