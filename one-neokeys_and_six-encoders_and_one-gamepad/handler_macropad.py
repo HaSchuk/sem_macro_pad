@@ -34,9 +34,8 @@ class MacroPadHandler(MacroPad):  # Erbt von MacroPad
         """Verarbeitet Eingaben des Encoders zur App-Umschaltung."""
         self.app_knob_position = self.encoder
         if self.app_knob_position != self.app_knob_last_position:
-            Config.Globals.app_index = self.app_knob_position % len(self.main.apps)
-            self.main.apps[Config.Globals.app_index].switch(self.main.macropad, self.main.display_group) 
-            self.main._control_interfaces_update_macros(Config.Globals.app_index, self.main.sideknobs, self.main.sidekeys)
+            app_number = self.app_knob_position % len(self.main.apps)
+            self.main._control_interfaces_update_macros(app_number, self.main.sideknobs, self.main.sidekeys)
             self.app_knob_last_position = self.app_knob_position
 
     def handle_key_events(self):

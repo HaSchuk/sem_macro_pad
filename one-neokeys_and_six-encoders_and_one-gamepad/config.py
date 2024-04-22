@@ -1,7 +1,4 @@
-from adafruit_hid.keycode import Keycode # type: ignore
 import time
-
-#TODO: SideKeys TODOS
 
 class Config:
     class Globals:
@@ -16,18 +13,13 @@ class Config:
 
     class SideKeys:
         count_keys = 4 # Anzahl an Keys
+        key_states = [0b00010000, 0b00100000, 0b01000000, 0b10000000]  # Pin-Zustände
         led_pixels_color_default = 0x000580
-        led_pixels_color = [0x004000, 0xFF8000, 0x000080, 0x203020]
         led_pixels_color_pressed_default = 0xFF2000
         led_pixels_color_enabled = True 
         led_pixels_color_brightness = 0.9 #Maxwert 1.0
-        #TODO: In Macrofile auslagern
-        key_commands = [
-            [None, None, Keycode.CONTROL, Keycode.CONTROL],
-            [None, None, Keycode.C, Keycode.V]
-        ]
         sidekey_list = [
-            ("neokey1", 0x30, [12, 13, 14])  # "Name", "HardwareAdresse", "MacroIndices" (TODO: Noch nicht eingebaut)
+            ("neokey1", 0x30, [30, 31, 32, 33])  # "Name", "HardwareAdresse", "MacroIndices" (TODO: Noch nicht eingebaut)
         ]
 
     class SideKnob:

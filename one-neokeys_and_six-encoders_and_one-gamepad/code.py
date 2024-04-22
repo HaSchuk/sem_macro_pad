@@ -132,7 +132,6 @@ class Main:
         from handler_sidekeys import SideKeysHandler
         from handler_sideknob import SideKnobHandler
         from handler_joystick import JoyStickHandler
-        #from handler_macropad import MacroPad
         self.sideknobs, self.sidekeys, self.joysticks  = {}, {}, {}
         
         for name, address, macroindices in Config.SideKnob.sideknob_list:
@@ -168,20 +167,22 @@ class Main:
             if hasattr(interface, 'update'):
                 interface.update()
 
-    @staticmethod
-    def _control_interfaces_update_macros(AppIndex, *interface_dicts):
+    def _control_interfaces_update_macros(self, appindex, *interface_dicts):
         """ 
         Erwartet Object Dicts mit Interface Elementen die mit initialize_* erzeugt wurden und verwendet die update Methode
         Überspringt Klassen ohne .update Methode
         Aufruf: _control_interfaces_update_macros(AppIndex, dict1, dict2, dict3)
         """
+        Config.Globals.app_index = appindex
+        self.apps[appindex].switch(self.macropad, self.display_group)
+
         combined_interfaces = {}
         for interface_dict in interface_dicts:
             combined_interfaces.update(interface_dict)
         for interface in combined_interfaces.values():
             # Prüfe, ob das Interface eine 'update' Methode hat, bevor du sie aufrufst
-            if hasattr(interface, 'setMacros'):
-                interface.setMacros(AppIndex)
+            if hasattr(interface, 'set_macros'):
+                interface.set_macros()
 
     def run(self):
         while True:

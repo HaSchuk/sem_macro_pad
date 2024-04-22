@@ -25,7 +25,7 @@ class SideKnobHandler:
         self.macroindices = macroIndices
         self._initialize_hardware()
         self._initialize_macros()
-        self.setMacros(Config.Globals.app_index, self.macroindices)
+        self.set_macros()
 
     def _initialize_hardware(self):
         """Initialisiert die Hardware-Komponenten des Drehknopfs."""
@@ -57,11 +57,8 @@ class SideKnobHandler:
         self.reverse_macro = []
         self.button_macro = []
     
-    def setMacros(self, app_index, macro_indices=None):
-        if macro_indices is None:
-            macro_indices = self.macroindices
-        self.macroindices = macro_indices
-        app_macros = self.main.apps[app_index].macros
+    def set_macros(self):
+        app_macros = self.main.apps[Config.Globals.app_index].macros
 
         # Funktion zum Extrahieren der Farbe, behandelt explizit `None` als fehlende Farbe
         def extract_color(macro_entry):
@@ -103,12 +100,19 @@ class SideKnobHandler:
         :param position: Die aktuelle Position des Drehknopfs.
         """
         movement = position - self.last_position
-        macro_to_process = self.forward_macro if movement > 0 else self.reverse_macro
-        if len(macro_to_process) == 2:
+        if movement != 0:
+            # Bestimme die Richtung der Bewegung
+            direction = "forward" if movement > 0 else "reverse"
+            # Führe das entsprechende Makro aus
+            macro_to_process = self.forward_macro if direction == "forward" else self.reverse_macro
             self._execute_macro(macro_to_process)
-        else:
-            self.main.macropad.keyboard.send(*macro_to_process)
-        self.last_position = position
+
+            # Aktualisiere die Farbe basierend auf der Richtung
+            new_color = self.forward_macro_color if direction == "forward" else self.reverse_macro_color
+            self.pixel.fill(new_color)
+            self.pixel.show()
+
+            self.last_position = position  # Aktualisiere die letzte Position
 
     def _execute_macro(self, macro):
         """Führt ein gegebenes Makro aus.
