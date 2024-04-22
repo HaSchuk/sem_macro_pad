@@ -1,5 +1,7 @@
 import time
 
+#TODO: Kommentieren von Code
+
 class Config:
     class Globals:
         macro_folder = '/macros'
@@ -8,7 +10,7 @@ class Config:
 
     class JoyStick:
         joystick_list = [
-            ("joystick_1R", 0x20)  # "Name", "HardwareAdresse" (Aktuell noch nicht benötigt)
+            ("joystick_1R", 0x20)  # "Name", "HardwareAdresse" 
         ]
 
     class SideKeys:
@@ -19,7 +21,7 @@ class Config:
         led_pixels_color_enabled = True 
         led_pixels_color_brightness = 0.9 #Maxwert 1.0
         sidekey_list = [
-            ("neokey1", 0x30, [30, 31, 32, 33])  # "Name", "HardwareAdresse", "MacroIndices" (TODO: Noch nicht eingebaut)
+            ("neokey1", 0x30, [30, 31, 32, 33])  # "Name", "HardwareAdresse", "MacroIndices" 
         ]
 
     class SideKnob:
