@@ -3,7 +3,9 @@ from adafruit_neokey.neokey1x4 import NeoKey1x4
 import time
 
 class SideKeysHandler:
-    """Klasse zur Verwaltung der seitlichen Tasten am Macropad.
+    """
+    Klasse zur Verwaltung der seitlichen Tasten am Macropad.
+
     Diese Klasse kümmert sich um die Erkennung von Tastendrücken und -freigaben
     für seitlich angebrachte Tasten, steuert zugehörige NeoPixel LEDs
     und führt konfigurierte Tastenbefehle aus.
@@ -11,10 +13,13 @@ class SideKeysHandler:
     PIN_MASK = 0b11110000  # Maske, um die relevanten Pins zu isolieren
 
     def __init__(self, main_instance, hw_address, macroIndices):
-        """Initialisiert eine neue Instanz der SideKeys-Klasse.
+        """
+        Initialisiert eine neue Instanz der SideKeysHandler-Klasse.
         
-        :param neoKey: Das NeoKey-Objekt für die LED-Steuerung.
-        :param macroPad: Das Macropad-Objekt für die Tastensteuerung.
+        :param main_instance: Die Hauptinstanz der Anwendung, die das Macropad und 
+                              andere Komponenten verwaltet.
+        :param hw_address: Die Hardware-Adresse des NeoKey-Objekts auf dem I2C-Bus.
+        :param macroIndices: Eine Liste von Indizes, die den Tasten zugewiesene Makros darstellen.
         """
         self.main = main_instance
         self.macroindices = macroIndices
@@ -24,7 +29,9 @@ class SideKeysHandler:
         self._set_all_pixels()
 
     def _initialize_settings(self):
-        """Initialisiert die Einstellungen des SideKeys."""
+        """
+        Initialisiert die Einstellungen des SideKeys.
+        """
         self.count_keys = Config.SideKeys.count_keys
         self.debounce_states = [False] * self.count_keys
         self.key_states = Config.SideKeys.key_states
@@ -37,7 +44,9 @@ class SideKeysHandler:
         self.pressed_color = Config.SideKeys.led_pixels_color_pressed_default
 
     def set_macros(self):
-        """Lädt die Makros für die aktuell ausgewählte App und aktualisiert die Tastenzuweisungen."""
+        """
+        Lädt die Makros für die aktuell ausgewählte App und aktualisiert die Tastenzuweisungen.
+        """
         app_macros = self.main.apps[Config.Globals.app_index].macros
 
         # Filtere nur die Makros, die den angegebenen Indizes entsprechen
@@ -48,14 +57,17 @@ class SideKeysHandler:
         self._set_all_pixels()  # Aktualisiere LED-Farben
 
     def _set_all_pixels(self):
-        """Setzt die Farbe aller NeoPixel LEDs basierend auf der aktuellen App."""
+        """
+        Setzt die Farbe aller NeoPixel LEDs basierend auf der aktuellen App.
+        """
         for i, color in enumerate(self.led_pixel_color):
             time.sleep(0.05)
             self.neoKey.pixels[i] = color if self.led_pixels_color_enabled else self.led_pixels_color_off
         self.neoKey.pixels.show()
 
     def _parse_pins(self, pins):
-        """Wandelt die gelesenen Pin-Zustände in Tastenzustände um.
+        """
+        Wandelt die gelesenen Pin-Zustände in Tastenzustände um.
         
         :param pins: Die gelesenen Pin-Zustände.
         :return: Eine Liste von Booleschen Werten, die den Zustand jeder Taste repräsentieren.
@@ -63,7 +75,11 @@ class SideKeysHandler:
         return [not pins & mask for mask in self.key_states]
 
     def _handle_key_press(self, index):
-        """Verarbeitet das Drücken einer Taste."""
+        """
+        Verarbeitet das Drücken einer Taste.
+
+        :param index: Der Index der gedrückten Taste.
+        """
         if index >= len(self.key_commands):
             print(f"Index {index} is out of range for key_commands")
             return
@@ -88,7 +104,11 @@ class SideKeysHandler:
 
 
     def _handle_key_release(self, index):
-        """Verarbeitet das Loslassen einer Taste."""
+        """
+        Verarbeitet das Loslassen einer Taste.
+
+        :param index: Der Index der losgelassenen Taste.
+        """
         if index >= len(self.neoKey.pixels):
             print(f"Index {index} out of range for NeoPixels")
             return
@@ -105,7 +125,9 @@ class SideKeysHandler:
 
 
     def update(self):
-        """Aktualisiert den Status der Seitentasten und verarbeitet Ereignisse."""
+        """
+        Aktualisiert den Status der Seitentasten und verarbeitet Ereignisse.
+        """
         pins = self.neoKey.digital_read_bulk(self.PIN_MASK)
         if pins == self.last_pins:
             return

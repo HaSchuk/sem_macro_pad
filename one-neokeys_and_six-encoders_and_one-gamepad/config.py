@@ -1,19 +1,31 @@
 import time
 
-#TODO: Kommentieren von Code
-
 class Config:
+    """
+    Diese Klasse enthält die gesamte Konfiguration für das Macropad-System.
+    Die Konfigurationen sind in innere Klassen unterteilt, die spezifische
+    Komponenten und Einstellungen verwalten.
+    """
     class Globals:
+        """
+        Globale Einstellungen für das Macropad-System.
+        """
         macro_folder = '/macros'
         led_color_off = 0x000000
         app_index = 0 # Default setzen, ändert sich zur Laufzeit
 
     class JoyStick:
+        """
+        Konfigurationen für die Joysticks, die am Macropad angeschlossen sind.
+        """
         joystick_list = [
             ("joystick_1R", 0x20)  # "Name", "HardwareAdresse" 
         ]
 
     class SideKeys:
+        """
+        Konfigurationen für die seitlichen Tasten am Macropad.
+        """
         count_keys = 4 # Anzahl an Keys
         key_states = [0b00010000, 0b00100000, 0b01000000, 0b10000000]  # Pin-Zustände
         led_pixels_color_default = 0x000580
@@ -25,6 +37,9 @@ class Config:
         ]
 
     class SideKnob:
+        """
+        Konfigurationen für die seitlichen Drehknöpfe (Side Knobs) am Macropad.
+        """
         led_pixels_color_default = 0x000580 #Wird aus Macro Datei geladen
         led_pixels_color_pressed_default = 0xFF2000
         led_pixels_color_enabled = True
@@ -39,6 +54,9 @@ class Config:
         ]
 
     class MacroPad:
+        """
+        Konfigurationen für das Macropad selbst.
+        """
         count_keys = 12 # Anzahl an Keys
         keypress_tones = [196, 220, 246, 262, 294, 330, 349, 392, 440, 494, 523, 587]
         key_to_app_map = { 1 : 'Lisa.LIMS', 0 : 'Quanta' }
@@ -48,9 +66,16 @@ class Config:
         led_pixels_color_brightness = 0.9 #Maxwert 1.0
     
     class GlobalFunctions: 
+        """
+        Globale Hilfsfunktionen, die im gesamten System verwendet werden können.
+        """
         @staticmethod
         def get_millis():
-            """Gibt die aktuelle Zeit in Millisekunden zurück."""
+            """
+            Gibt die aktuelle Zeit in Millisekunden zurück.
+
+            :return: Die aktuelle Zeit in Millisekunden.
+            """
             return round(time.time() * 1000)
         
 

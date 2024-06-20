@@ -15,7 +15,8 @@ class JoyStickHandler:
     DEBOUNCE_TIME = 0.1  
 
     def __init__(self, main_instance, hw_address):
-        """Initialisiert eine neue Instanz der JoyStick-Klasse.
+        """
+        Initialisiert eine neue Instanz der JoyStick-Klasse.
         
         :param joystick: Das Joystick-Objekt für die Eingabe.
         :param macroPad: Das Macropad-Objekt für die Aktionen.
@@ -26,7 +27,9 @@ class JoyStickHandler:
         self.initialize_joystick()
 
     def initialize_joystick(self):
-        """Initialisiert die Joystick-Konfiguration und setzt Startwerte."""
+        """
+        Initialisiert die Joystick-Konfiguration und setzt Startwerte.
+        """
         #Letze Positionen JS auf Null setzen
         self.last_x = 0
         self.last_y = 0
@@ -91,7 +94,9 @@ class JoyStickHandler:
             self.main.macropad.mouse.release(self.main.macropad.Mouse.MIDDLE_BUTTON)
 
     def _handle_joystick_click(self):
-        """Verarbeitet den Joystick-Klick und führt eine Aktion aus, wenn der Button gedrückt wurde."""
+        """
+        Verarbeitet den Joystick-Klick und führt eine Aktion aus, wenn der Button gedrückt wurde.
+        """
         button_pressed = self.joystick.button == 0
 
         if button_pressed and not self.button_was_pressed:
@@ -102,7 +107,9 @@ class JoyStickHandler:
         self.button_was_pressed = button_pressed
 
     def update(self):
-        """Aktualisiert die Position des Joysticks und führt die entsprechende Aktion aus. 
-        Beinhaltet auch die Joystick Klickfunktionalität."""
+        """
+        Aktualisiert die Position des Joysticks und führt die entsprechende Aktion aus. 
+        Beinhaltet auch die Joystick Klickfunktionalität.
+        """
         self._update_movement()
         self._handle_joystick_click()

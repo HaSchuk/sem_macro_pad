@@ -15,10 +15,12 @@ class SideKnobHandler:
     DEBOUNCE_DELAY = 100  # Milliseconds for debounce delay
 
     def __init__(self, main_instance, hw_address, macroIndices):
-        """Initialisiert eine neue Instanz der SideKnob-Klasse.
-        :param seesaw: Das Seesaw-Objekt für I/O-Operationen.
-        :param macroPad: Das Macropad-Objekt für die Steuerung.
-        :param Apps: Eine Liste von Anwendungen mit Makros.
+        """
+        Initialisiert eine neue Instanz der SideKnobHandler-Klasse.
+
+        :param main_instance: Die Hauptinstanz der Anwendung, die das Macropad und andere Komponenten verwaltet.
+        :param hw_address: Die Hardware-Adresse des Seesaw-Objekts auf dem I2C-Bus.
+        :param macroIndices: Eine Liste von Indizes, die den Makros entsprechen.
         """
         self.main = main_instance
         self.seesaw = seesaw.Seesaw(self.main.i2c_bus, addr=hw_address)
@@ -28,7 +30,9 @@ class SideKnobHandler:
         self.set_macros()
 
     def _initialize_hardware(self):
-        """Initialisiert die Hardware-Komponenten des Drehknopfs."""
+        """
+        Initialisiert die Hardware-Komponenten des Drehknopfs.
+        """
         self.seesaw.pin_mode(self.BUTTON_PIN, self.seesaw.INPUT_PULLUP)
         self.button = digitalio.DigitalIO(self.seesaw, self.BUTTON_PIN)
         self.encoder = rotaryio.IncrementalEncoder(self.seesaw)
@@ -45,19 +49,28 @@ class SideKnobHandler:
         self.last_change_time = Config.GlobalFunctions.get_millis()
 
     def toggle_knob_led(self, color):
-        """Schaltet die Led Beleuchtung an oder aus, wenn Sie global deaktiviert ist."""
+        """
+        Schaltet die LED-Beleuchtung an oder aus, basierend auf der globalen Einstellung.
+
+        :param color: Die Farbe, die die LED anzeigen soll.
+        """
         if self.led_pixels_color_enabled:
             self.pixel.fill(color)
         else:
             self.pixel.fill(self.led_pixels_color_off)
 
     def _initialize_macros(self):
-        """Initialisiert die Makro-Konfigurationen für den Drehknopf."""
+        """
+        Initialisiert die Makro-Konfigurationen für den Drehknopf.
+        """
         self.forward_macro = []
         self.reverse_macro = []
         self.button_macro = []
     
     def set_macros(self):
+        """
+        Lädt die Makros für die aktuell ausgewählte App und aktualisiert die Makro-Zuweisungen.
+        """
         app_macros = self.main.apps[Config.Globals.app_index].macros
 
         # Funktion zum Extrahieren der Farbe, behandelt explizit `None` als fehlende Farbe
@@ -96,7 +109,9 @@ class SideKnobHandler:
 
 
     def _process_encoder_movement(self, position):
-        """Verarbeitet die Bewegung des Drehknopfs und führt das zugehörige Makro aus.
+        """
+        Verarbeitet die Bewegung des Drehknopfs und führt das zugehörige Makro aus.
+
         :param position: Die aktuelle Position des Drehknopfs.
         """
         movement = position - self.last_position
@@ -115,8 +130,9 @@ class SideKnobHandler:
             self.last_position = position  # Aktualisiere die letzte Position
 
     def _execute_macro(self, macro):
-        """Führt ein gegebenes Makro aus.
-        
+        """
+        Führt ein gegebenes Makro aus.
+
         :param macro: Das auszuführende Makro.
         """
         for action in macro:
@@ -138,7 +154,9 @@ class SideKnobHandler:
                 self.main.macropad.keyboard.release_all()
 
     def _process_button_press(self):
-        """Verarbeitet den Druck auf den Knopf des Drehknopfs."""
+        """
+        Verarbeitet den Druck auf den Knopf des Drehknopfs.
+        """
         self.main.macropad.keyboard.press(*self.button_macro)
         self.toggle_knob_led(
             self.button_macro_color if self.button_macro_color else
@@ -148,7 +166,9 @@ class SideKnobHandler:
         self.main.macropad.keyboard.release(*self.button_macro)
 
     def update(self):
-        """Aktualisiert den Status des Drehknopfs und verarbeitet Ereignisse."""
+        """
+        Aktualisiert den Status des Drehknopfs und verarbeitet Ereignisse.
+        """
         current_position = -self.encoder.position
         if current_position != self.last_position:
             self._process_encoder_movement(current_position)

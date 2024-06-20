@@ -6,18 +6,28 @@ from config import Config # Configuration management in a separate file (config.
 
 # CLASSES AND FUNCTIONS ----------------
 class App:
-    """ Class representing a host-side application, for which we have a set
-        of macro sequences. Project code was originally more complex and
-        this was helpful, but maybe it's excessive now?"""
+    """
+    Klasse, die eine hostseitige Anwendung darstellt, für die wir eine Reihe von Makrosequenzen nutzen.
+    """
     def __init__(self, appdata):
+        """
+        Initialisiert eine neue Instanz der App-Klasse.
+
+        :param appdata: Ein Dictionary, das die Anwendungsdaten enthält.
+                        Muss die Schlüssel 'name', 'macros', 'enter_macro' und 'exit_macro' enthalten.
+        """
         self.name = appdata['name']
         self.macros = appdata['macros']
         self.enter_macro = appdata['enter_macro']
         self.exit_macro = appdata['exit_macro']
     
     def switch(self, macropad, display_group):
-        """ Activate application settings; update OLED labels and LED
-            colors. """
+        """
+        Aktiviert Anwendungseinstellungen; aktualisiert OLED-Labels und LED-Farben.
+
+        :param macropad: Das MacroPad-Objekt, das die Eingaben und LED-Steuerung ermöglicht.
+        :param display_group: Die Display-Gruppe, die die Labels auf dem OLED-Bildschirm enthält.
+        """
         display_group[13].text = self.name   # Application name
 
         for i in range(Config.MacroPad.count_keys):
@@ -34,11 +44,20 @@ class App:
         macropad.display.refresh()
 
 class Main:
+    """
+    Hauptklasse, die die Initialisierung der Hardware und die Ausführung der Hauptschleife übernimmt.
+    """
     def __init__(self):
+        """
+        Initialisiert eine neue Instanz der Main-Klasse und startet den Ausführungsprozess.
+        """
         self._initialize_hardware()
         self.run()
 
     def _initialize_hardware(self):
+        """
+        Initialisiert die Hardwarekomponenten wie i2c-Bus, MacroPad, Display und Steuerungsschnittstellen.
+        """
         # Initialize i2c Board
         self.i2c_bus = board.I2C()
         # Initialize MacroPad incl. settings
@@ -122,12 +141,18 @@ class Main:
                 pass
     
     def _initialize_macropad(self):
+        """
+        Initialisiert das MacroPad, indem der entsprechende Handler importiert und instanziiert wird.
+        """
         # Import Handler
         from handler_macropad import MacroPadHandler
         # Initialize MacroPadHandler
         self.macropad = MacroPadHandler(self)
 
     def _initialize_control_interfaces(self):
+        """
+        Initialisiert die Steuerungsschnittstellen wie SideKeys, SideKnob und Joystick, indem die entsprechenden Handler importiert und instanziiert werden.
+        """
         # Import Handlers
         from handler_sidekeys import SideKeysHandler
         from handler_sideknob import SideKnobHandler
@@ -154,10 +179,13 @@ class Main:
 
     @staticmethod
     def _control_interfaces_update(*interface_dicts):
-        """ 
-        Erwartet Object Dicts mit Interface Elementen die mit initialize_* erzeugt wurden und verwendet die update Methode
-        Überspringt Klassen ohne .update Methode
+        """
+        Erwartet Object Dicts mit Interface Elementen die mit initialize_* erzeugt wurden und verwendet die update Methode.
+        Überspringt Klassen ohne .update Methode.
+
         Aufruf: _control_interfaces_update(dict1, dict2, dict3)
+
+        :param interface_dicts: Dictionaries mit Schnittstellenobjekten, die aktualisiert werden sollen.
         """
         combined_interfaces = {}
         for interface_dict in interface_dicts:
@@ -168,10 +196,14 @@ class Main:
                 interface.update()
 
     def _control_interfaces_update_macros(self, appindex, *interface_dicts):
-        """ 
-        Erwartet Object Dicts mit Interface Elementen die mit initialize_* erzeugt wurden und verwendet die update Methode
-        Überspringt Klassen ohne .update Methode
+        """
+        Erwartet Object Dicts mit Interface Elementen die mit initialize_* erzeugt wurden und verwendet die update Methode.
+        Überspringt Klassen ohne .update Methode.
+
         Aufruf: _control_interfaces_update_macros(AppIndex, dict1, dict2, dict3)
+
+        :param appindex: Der Index der zu aktivierenden Anwendung.
+        :param interface_dicts: Dictionaries mit Schnittstellenobjekten, die aktualisiert werden sollen.
         """
         Config.Globals.app_index = appindex
         self.apps[appindex].switch(self.macropad, self.display_group)
@@ -185,6 +217,9 @@ class Main:
                 interface.set_macros()
 
     def run(self):
+        """
+        Führt die Hauptschleife der Anwendung aus, die die Steuerungsschnittstellen aktualisiert und das MacroPad überwacht.
+        """
         while True:
             # ----------- Controller Interfaces --------------------
             self._control_interfaces_update(self.sideknobs, self.sidekeys, self.joysticks)

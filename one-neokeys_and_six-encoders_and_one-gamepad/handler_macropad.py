@@ -3,7 +3,19 @@ from adafruit_macropad import MacroPad # type: ignore
 
 
 class MacroPadHandler(MacroPad):  # Erbt von MacroPad
+    """
+    Diese Klasse erweitert die Funktionalität des MacroPad, indem sie spezifische 
+    Anwendungsfälle wie LED-Verwaltung, Encoder-Eingaben und Tastendruckereignisse 
+    behandelt.
+    """
+        
     def __init__(self, main_instance):
+        """
+        Initialisiert eine neue Instanz der MacroPadHandler-Klasse.
+
+        :param main_instance: Die Hauptinstanz der Anwendung, die das MacroPad und 
+                              andere Komponenten verwaltet.
+        """
         super().__init__()  # Initialisiert MacroPad
         self.display.auto_refresh = False
         self.pixels.auto_write = False
@@ -15,7 +27,9 @@ class MacroPadHandler(MacroPad):  # Erbt von MacroPad
         self.led_pixels_color_enabled = Config.MacroPad.led_pixels_color_enabled
 
     def update_led_state(self):
-        """Aktualisiert den Zustand der LEDs auf dem MacroPad."""
+        """
+        Aktualisiert den Zustand der LEDs auf dem MacroPad.
+        """
         if self.encoder_switch_debounced.pressed:
             self.led_pixels_color_enabled = not self.led_pixels_color_enabled
 
@@ -24,14 +38,18 @@ class MacroPadHandler(MacroPad):  # Erbt von MacroPad
                 self.update_led_colors()
 
     def update_led_colors(self):
-        """Setzt die LED-Farben entsprechend dem aktuellen Modus."""
+        """
+        Setzt die LED-Farben entsprechend dem aktuellen Modus.
+        """
         color = Config.Globals.led_color_off if not self.led_pixels_color_enabled else None
         for i in range(Config.MacroPad.count_keys):
             self.pixels[i] = color if color else self.main.apps[Config.Globals.app_index].macros[i][0]
         self.pixels.show()
 
     def handle_encoder_input(self):
-        """Verarbeitet Eingaben des Encoders zur App-Umschaltung."""
+        """
+        Verarbeitet Eingaben des Encoders zur App-Umschaltung.
+        """
         self.app_knob_position = self.encoder
         if self.app_knob_position != self.app_knob_last_position:
             app_number = self.app_knob_position % len(self.main.apps)
@@ -39,7 +57,9 @@ class MacroPadHandler(MacroPad):  # Erbt von MacroPad
             self.app_knob_last_position = self.app_knob_position
 
     def handle_key_events(self):
-        """Verarbeitet Tastendruckereignisse und führt zugehörige Makros aus."""
+        """
+        Verarbeitet Tastendruckereignisse und führt zugehörige Makros aus.
+        """
         event = self.keys.events.get()
         if event and event.key_number < len(self.main.apps[Config.Globals.app_index].macros):
             key_number = event.key_number
@@ -50,7 +70,13 @@ class MacroPadHandler(MacroPad):  # Erbt von MacroPad
                 self.execute_macro(sequence, key_number, pressed=False)
 
     def execute_macro(self, sequence, key_number, pressed):
-        """Führt das Makro für eine gegebene Sequenz aus."""
+        """
+        Führt das Makro für eine gegebene Sequenz aus.
+
+        :param sequence: Die Makrosequenz, die ausgeführt werden soll.
+        :param key_number: Die Nummer der Taste, die das Makro auslöst.
+        :param pressed: Boolescher Wert, ob die Taste gedrückt (True) oder losgelassen (False) wurde.
+        """
         if pressed:
             self.pixels[key_number] = Config.MacroPad.led_pixels_color_pressed_default
             self.process_macro_sequence(sequence, press=True)
@@ -60,7 +86,12 @@ class MacroPadHandler(MacroPad):  # Erbt von MacroPad
         self.pixels.show()
 
     def process_macro_sequence(self, sequence, press):
-        """Verarbeitet eine gegebene Makrosequenz, entweder Drücken oder Loslassen."""
+        """
+        Verarbeitet eine gegebene Makrosequenz, entweder Drücken oder Loslassen.
+
+        :param sequence: Die Makrosequenz, die ausgeführt werden soll.
+        :param press: Boolescher Wert, ob die Aktion ein Drücken (True) oder Loslassen (False) ist.
+        """
         for item in sequence:
             if isinstance(item, int):
                 if item >= 0 and press:
@@ -71,13 +102,22 @@ class MacroPadHandler(MacroPad):  # Erbt von MacroPad
                 self.handle_complex_input(item, press)
 
     def handle_complex_input(self, item, press):
-        """Handhabt komplexe Eingabeaktionen wie Mausbewegungen und Tastenkombinationen."""
+        """
+        Handhabt komplexe Eingabeaktionen wie Mausbewegungen und Tastenkombinationen.
+
+        :param item: Ein Dictionary, das die komplexe Eingabeaktion beschreibt.
+        :param press: Boolescher Wert, ob die Aktion ein Drücken (True) oder Loslassen (False) ist.
+        """
         if 'buttons' in item and (press or item['buttons'] < 0):
             method = self.mouse.press if press else self.mouse.release
             method(abs(item['buttons']))
         self.mouse.move(item.get('x', 0), item.get('y', 0), item.get('wheel', 0))
 
     def update(self):
+        """
+        Aktualisiert den Zustand des MacroPads, einschließlich der LED-Zustände, 
+        Encoder-Eingaben und Tastendruckereignisse.
+        """
         self.update_led_state()
         self.handle_encoder_input()
         self.handle_key_events()
